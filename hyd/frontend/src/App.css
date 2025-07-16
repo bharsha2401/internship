@@ -1,0 +1,30 @@
+/* client/src/styles/App.css */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+}
+
+h2, h3 {
+  color: #333;
+}
+
+/* Allow scrolling but hide scrollbars */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+/* Hide scrollbars for Chrome, Edge, Safari */
+body::-webkit-scrollbar, html::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbars for Firefox */
+body, html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+

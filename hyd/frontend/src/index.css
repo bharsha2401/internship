@@ -1,0 +1,144 @@
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent scrollbars by default */
+}
+
+.app-scroll-area {
+  height: 100vh;
+  width: 100vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Hide scrollbars for Chrome, Edge, Safari */
+.app-scroll-area::-webkit-scrollbar {
+  width: 0 !important;
+  display: none;
+}
+
+/* Hide scrollbars for Firefox and IE */
+.app-scroll-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Optional: Hide scrollbars but allow scrolling */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  width: 0 !important;
+  display: none;
+}
+html, body, #root {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.Toastify__toast {
+  font-size: 1.3rem !important;
+  min-height: 70px !important;
+  padding: 24px 28px !important;
+}
+.Toastify__toast-body {
+  font-size: 1.3rem !important;
+}
+.Toastify__toast-icon {
+  width: 2.2em !important;
+  height: 2.2em !important;
+}
+.change-password-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7fafd;
+}
+
+.change-password-box {
+  max-width: 600px;
+  width: 100%;
+  background: #fff;
+  padding: 40px 36px 32px 36px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(30,64,175,0.10);
+  margin: 40px 0;
+}
+
+.change-password-box h2 {
+  text-align: center;
+  margin-bottom: 32px;
+  color: #222;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.change-password-box label {
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 6px;
+  display: block;
+  font-size: 1.08rem;
+}
+
+.change-password-box input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 18px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 16px;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+
+.change-password-box button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(90deg, #007bff 60%, #0056b3 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.change-password-message {
+  text-align: center;
+  margin-top: 18px;
+  font-weight: 500;
+}
+
+.change-password-message.success {
+  color: #28a745;
+}
+
+.change-password-message.error {
+  color: #d32f2f;
+}
