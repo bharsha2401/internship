@@ -13,11 +13,11 @@ const Navbar = () => {
   const fetchProfilePic = async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setProfilePic(data.picture ? `http://localhost:5000${data.picture}` : '/default-profile.png');
+      setProfilePic(data.picture ? `${process.env.REACT_APP_API_URL}${data.picture}` : '/default-profile.png');
     } catch {
       setProfilePic('/default-profile.png');
     }

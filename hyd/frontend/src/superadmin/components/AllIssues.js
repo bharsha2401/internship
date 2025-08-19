@@ -42,7 +42,7 @@ const ViewIssues = () => {
   // Memoize fetchIssues to satisfy eslint exhaustive-deps
   const fetchIssues = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/issues/all', {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/issues/all`, {
         params: {
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
@@ -59,14 +59,14 @@ const ViewIssues = () => {
   }, [fetchIssues]);
 
   const handleStatusChange = async (id, newStatus) => {
-    await axios.put(`http://localhost:5000/api/issues/${id}/status`, { status: newStatus });
-    fetchIssues();
+  await axios.put(`${process.env.REACT_APP_API_URL}/api/issues/${id}/status`, { status: newStatus });
+  fetchIssues();
   };
 
   const handleAddComment = async () => {
     if (!newComment || !selectedIssue) return;
     const userId = localStorage.getItem('userId');
-    await axios.post(`http://localhost:5000/api/issues/${selectedIssue}/comment`, {
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
       text: newComment,
       createdBy: userId,
     });
@@ -76,11 +76,11 @@ const ViewIssues = () => {
   };
 
   const exportExcel = () => {
-    window.open('http://localhost:5000/api/issues/export/excel', '_blank');
+  window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/excel`, '_blank');
   };
 
   const exportPdf = () => {
-    window.open('http://localhost:5000/api/issues/export/pdf', '_blank');
+  window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/pdf`, '_blank');
   };
 
   return (

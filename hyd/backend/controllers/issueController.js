@@ -1,6 +1,6 @@
 import Issue from '../models/Issue.js';
 import XLSX from 'xlsx';
-import pdf from 'html-pdf';
+import puppeteer from 'puppeteer';
 
 export const raiseIssue = async (req, res) => {
   try {
@@ -81,6 +81,7 @@ export const exportIssuesExcel = async (req, res) => {
   }
 };
 
+
 export const exportIssuesPdf = async (req, res) => {
   try {
     const issues = await Issue.find();
@@ -92,12 +93,14 @@ export const exportIssuesPdf = async (req, res) => {
         `).join('')}
       </ul>
     `;
-    pdf.create(html).toStream((err, stream) => {
-      if (err) return res.status(500).send('PDF generation failed');
-      res.setHeader('Content-Disposition', 'attachment; filename=issues.pdf');
-      res.setHeader('Content-Type', 'application/pdf');
-      stream.pipe(res);
-    });
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+    res.setHeader('Content-Disposition', 'attachment; filename=issues.pdf');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(pdfBuffer);
   } catch (err) {
     res.status(500).json({ message: 'PDF export failed', error: err.message });
   }

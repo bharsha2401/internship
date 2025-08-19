@@ -8,7 +8,7 @@ const EmployeeCalendar = () => {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/calendar/all').then(res => setEvents(res.data));
+  axios.get(`${process.env.REACT_APP_API_URL}/api/calendar/all`).then(res => setEvents(res.data));
   }, []);
 
   return (

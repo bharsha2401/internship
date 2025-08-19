@@ -23,15 +23,15 @@ const EmployeeLandingPage = () => {
   const fetchAllData = async () => {
     try {
       // Fetch announcements
-      const announcementsRes = await axios.get('http://localhost:5000/api/announcements/view');
+      const announcementsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/announcements/view`);
       setAnnouncements(announcementsRes.data.slice(0, 3)); // Latest 3
 
       // Fetch polls
-      const pollsRes = await axios.get('http://localhost:5000/api/polls/all');
+      const pollsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/polls/all`);
       setPolls(pollsRes.data.slice(0, 3)); // Latest 3
 
       // Fetch my bookings
-      const bookingsRes = await axios.get(`http://localhost:5000/api/bookings/user/${userId}`, {
+      const bookingsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/bookings/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -52,7 +52,7 @@ const EmployeeLandingPage = () => {
       setUpcomingBookings(upcoming);
 
       // Fetch calendar events
-      const calendarRes = await axios.get('http://localhost:5000/api/calendar/all');
+      const calendarRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/calendar/all`);
       const todaysEvents = calendarRes.data.filter(event => {
         const eventDate = new Date(event.date).toISOString().split('T')[0];
         return eventDate === todayStr;
@@ -69,7 +69,7 @@ const EmployeeLandingPage = () => {
   const handleVote = async (pollId, optionIdx) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/polls/vote/${pollId}/${optionIdx}`,
+        `${process.env.REACT_APP_API_URL}/api/polls/vote/${pollId}/${optionIdx}`,
         { userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

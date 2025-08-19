@@ -19,8 +19,8 @@ const ManageRoleRequests = () => {
   const fetchRequests = async () => {
     try {
       const url = statusFilter 
-        ? `http://localhost:5000/api/role-requests/all?status=${statusFilter}`
-        : 'http://localhost:5000/api/role-requests/all';
+        ? `${process.env.REACT_APP_API_URL}/api/role-requests/all?status=${statusFilter}`
+        : `${process.env.REACT_APP_API_URL}/api/role-requests/all`;
 
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -47,7 +47,7 @@ const ManageRoleRequests = () => {
     setMessage('');
 
     try {
-      await axios.put(`http://localhost:5000/api/role-requests/review/${requestId}`, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/api/role-requests/review/${requestId}`, {
         status,
         reviewNote: reviewNote.trim()
       }, {

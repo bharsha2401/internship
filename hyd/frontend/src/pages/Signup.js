@@ -46,9 +46,10 @@ const Signup = () => {
     setError('');
     setMessage('');
 
+
     try {
       // Send OTP for email verification (don't create account yet)
-      await axios.post('http://localhost:5000/api/auth/send-email-otp', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/send-email-otp`, {
         name: formData.name,
         email: formData.email
       });
@@ -75,8 +76,9 @@ const Signup = () => {
     setError('');
     setMessage('');
 
+
     try {
-      await axios.post('http://localhost:5000/api/auth/verify-email-otp', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/verify-email-otp`, {
         email: formData.email,
         otp
       });
@@ -98,7 +100,7 @@ const Signup = () => {
     setMessage('');
 
     try {
-      await axios.post('http://localhost:5000/api/auth/send-email-otp', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/send-email-otp`, {
         name: formData.name,
         email: formData.email
       });
@@ -129,9 +131,10 @@ const Signup = () => {
     setError('');
     setMessage('');
 
+
     try {
       // Create account after email verification
-      await axios.post('http://localhost:5000/api/auth/create-account', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/create-account`, {
         name: formData.name,
         email: formData.email,
         password: formData.password,

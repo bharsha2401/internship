@@ -13,7 +13,7 @@ const BookingList = () => {
 
   const fetchBookings = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/bookings', {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/bookings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBookings(res.data);
@@ -24,7 +24,7 @@ const BookingList = () => {
 
   const handleCancel = async (bookingId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}`, {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/api/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchBookings();

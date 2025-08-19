@@ -50,7 +50,7 @@ const ManageRoles = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/users', {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(res.data);
@@ -61,7 +61,7 @@ const ManageRoles = () => {
         });
         setSelectedRoles(defaults);
       } catch (err) {
-        setMessage('❌ Failed to load users');
+        setMessage('\u274c Failed to load users');
       } finally {
         setLoading(false);
       }
@@ -74,21 +74,19 @@ const ManageRoles = () => {
     const newRole = selectedRoles[id];
     try {
       await axios.put(
-        `http://localhost:5000/api/users/${id}/role`,
+        `${process.env.REACT_APP_API_URL}/api/users/${id}/role`,
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setUsers((prev) =>
         prev.map((u) => (u._id === id ? { ...u, role: newRole } : u))
       );
-
-      setMessage(`✅ Role updated to ${newRole}`);
+      setMessage(`\u2705 Role updated to ${newRole}`);
     } catch (err) {
-      setMessage('❌ Failed to update role');
+      setMessage('\u274c Failed to update role');
     }
   };
-
+  // ...existing code...
   return (
     <div style={contentContainerStyle}>
       <h2
@@ -191,6 +189,6 @@ const ManageRoles = () => {
       </div>
     </div>
   );
-};
+}
 
 export default ManageRoles;

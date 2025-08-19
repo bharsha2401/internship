@@ -28,7 +28,7 @@ const ProfilePage = () => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get('http://localhost:5000/api/auth/profile', {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProfile(res.data);
@@ -66,7 +66,7 @@ const ProfilePage = () => {
       formData.append('picture', selectedFile);
     }
     try {
-      await axios.put('http://localhost:5000/api/auth/profile', formData, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/api/auth/profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -77,7 +77,7 @@ const ProfilePage = () => {
       setSelectedFile(null);
       
       // Refresh profile data
-      const res = await axios.get('http://localhost:5000/api/auth/profile', {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfile(res.data);
@@ -116,7 +116,7 @@ const ProfilePage = () => {
                 selectedFile
                   ? URL.createObjectURL(selectedFile)
                   : profile.picture 
-                    ? `http://localhost:5000${profile.picture}` 
+                    ? `${process.env.REACT_APP_API_URL}${profile.picture}` 
                     : '/default-profile.png'
               }
               alt="Profile"

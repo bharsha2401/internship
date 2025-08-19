@@ -15,7 +15,7 @@ const RaiseIssue = () => {
     setErrorMsg('');
     const raisedBy = localStorage.getItem('userId');
     try {
-      await axios.post('http://localhost:5000/api/issues/raise', {
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/raise`, {
         title, description, priority, raisedBy
       });
       setSuccessMsg('✅ Issue submitted successfully!');
