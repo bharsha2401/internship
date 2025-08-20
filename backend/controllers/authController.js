@@ -13,7 +13,7 @@ const tempEmailVerifications = new Map();
 // ================== NEW FUNCTIONS FOR STEP-BY-STEP SIGNUP ==================
 
 // ------------------ STEP 3: SEND EMAIL OTP (NEW) ------------------
-export const sendEmailOTP = async (req, res) => {
+export const sendEmailOtp = async (req, res) => {
   try {
     const { name, email } = req.body;
     

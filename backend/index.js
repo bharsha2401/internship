@@ -42,7 +42,7 @@ import settingsRoutes from './routes/settings.js';
 import roleRequestRoutes from './routes/roleRequestRoutes.js';
 
 // mount routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/issues', issueRoutes);
