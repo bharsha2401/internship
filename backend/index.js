@@ -13,16 +13,14 @@ connectDB();
 const app = express();
 
 // ✅ Updated CORS to allow your IP address
+const allowedOrigins = [
+  'https://incor.netlify.app',
+  'http://localhost:3000', // (optional, for local development)
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://192.168.0.103:3000',
-    'http://127.0.0.1:3000',
-    'https://68a3eb1eef4ffc00082a91d2--employee-portol.netlify.app', // typo preview
-    'https://employee-portol.netlify.app', // typo main
-    'https://employee-portal.netlify.app'   // correct main
-  ],
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true, // if you use cookies or auth headers
 }));
 
 app.use(express.json());
