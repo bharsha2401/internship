@@ -37,7 +37,6 @@ export const sendEmailOtp = async (req, res) => {
 
     // Send OTP email
     await sendOTPEmail(email, otp, name);
-
     res.status(200).json({ 
       message: 'OTP sent successfully. Please check your email.' 
     });

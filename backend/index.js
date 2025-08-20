@@ -15,12 +15,12 @@ const app = express();
 // ✅ Updated CORS to allow your IP address
 const allowedOrigins = [
   'https://incor.netlify.app',
-  'http://localhost:3000', // (optional, for local development)
+  'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: allowedOrigins,
-  credentials: true, // if you use cookies or auth headers
+  credentials: true // if you use cookies or auth headers
 }));
 
 app.use(express.json());
@@ -42,7 +42,7 @@ import settingsRoutes from './routes/settings.js';
 import roleRequestRoutes from './routes/roleRequestRoutes.js';
 
 // mount routes
-app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/issues', issueRoutes);
