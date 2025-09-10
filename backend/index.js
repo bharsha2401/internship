@@ -14,6 +14,7 @@ const app = express();
 
 // ✅ Updated CORS to allow your IP address
 const allowedOrigins = [
+  'https://incorgroup.netlify.app',
   'https://incor.netlify.app',
   'http://localhost:3000'
 ];
