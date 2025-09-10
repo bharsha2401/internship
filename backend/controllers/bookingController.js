@@ -18,22 +18,19 @@ export const getAllBookings = async (req, res) => {
 // Create a new booking
 export const createBooking = async (req, res) => {
   try {
-    const { room, date, time } = req.body;
-    if (!room || !date || !time) {
-      return res.status(400).json({ message: 'Room, date, and time are required' });
+    const { room, startTime, endTime } = req.body;
+    if (!room || !startTime || !endTime) {
+      return res.status(400).json({ message: 'Room, startTime, and endTime are required' });
     }
 
-    // Combine date and time as a local datetime string
-    const [year, month, day] = date.split('-').map(Number);
-    const [hours, minutes] = time.split(':').map(Number);
-    const startTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+    const start = new Date(startTime);
+    const end = new Date(endTime);
 
     // Check for time conflict
     const conflict = await Booking.findOne({
       room,
       $or: [
-        { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+        { startTime: { $lt: end }, endTime: { $gt: start } }
       ]
     });
     if (conflict) {
@@ -43,8 +40,8 @@ export const createBooking = async (req, res) => {
     const newBooking = new Booking({
       room,
       bookedBy: req.user._id,
-      startTime,
-      endTime
+      startTime: start,
+      endTime: end
     });
     await newBooking.save();
 
@@ -58,10 +55,10 @@ export const createBooking = async (req, res) => {
     await sendBookingConfirmation(
       user.email,
       roomObj.name,
-      date,
+      start.toLocaleDateString(),
       startTimeStr,
       endTimeStr,
-      user.name || 'User'  // Add user name here
+      user.name || 'User'
     );
 
     res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
@@ -109,5 +106,36 @@ export const cancelBooking = async (req, res) => {
     res.status(200).json({ message: 'Booking cancelled successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Cancellation failed', error: err.message });
+  }
+};
+
+const handleBook = async () => {
+  if (!selectedRoom || !selectedDate || !selectedTime || !duration) {
+    toast.error('Please select all fields.');
+    return;
+  }
+
+  // Construct ISO start time
+  const [h, m] = selectedTime.split(':').map(Number);
+  const bookingDate = new Date(selectedDate);
+  bookingDate.setHours(h, m, 0, 0);
+
+  // Calculate end time
+  const endDate = new Date(bookingDate.getTime() + Number(duration) * 60000);
+
+  try {
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/bookings`, {
+      room: selectedRoom, // should be room ID
+      startTime: bookingDate.toISOString(),
+      endTime: endDate.toISOString(),
+      duration
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    toast.success('Room booked successfully!');
+    setSelectedTime('');
+    fetchBookings();
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Booking failed');
   }
 };

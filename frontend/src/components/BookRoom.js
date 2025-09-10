@@ -1,4 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// Helper to check if a slot is booked for the selected room/date/duration
+const isSlotBooked = (slot) => {
+  if (!selectedRoom || !selectedDate || !duration) return false;
+  const selected = new Date(selectedDate);
+  const [h, m] = slot.split(':').map(Number);
+  const slotStart = new Date(selectedDate);
+  slotStart.setHours(h, m, 0, 0);
+  const slotEnd = new Date(slotStart.getTime() + Number(duration) * 60000);
+
+  // Get bookings for this room and date
+  const roomBookings = bookings.filter(
+    (b) =>
+      b.room?._id === selectedRoom &&
+      new Date(b.startTime).toDateString() === selected.toDateString()
+  );
+
+  for (let b of roomBookings) {
+    const bookingStart = new Date(b.startTime);
+    const bookingEnd = new Date(b.endTime);
+    if (slotStart < bookingEnd && slotEnd > bookingStart) {
+      return true;
+    }
+  }
+  return false;
+};
+import React, { useState, useEffect, useCallback } from 'react';;
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -20,6 +45,7 @@ const BookRoom = () => {
   const [duration, setDuration] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [bookings, setBookings] = useState([]);
+  const [message, setMessage] = useState('');
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
   const userId = localStorage.getItem('userId');
@@ -31,6 +57,20 @@ const BookRoom = () => {
     const hour = ((h + 11) % 12 + 1);
     return `${hour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
   };
+
+  // Helper: get end time string in 12-hour format
+  function getEndTime(startTime, duration) {
+    if (!startTime || !duration) return '';
+    const [h, m] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(h, m, 0, 0);
+    const endDate = new Date(startDate.getTime() + Number(duration) * 60000);
+    let hours = endDate.getHours();
+    const minutes = endDate.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = ((hours + 11) % 12 + 1);
+    return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+  }
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -107,40 +147,66 @@ const BookRoom = () => {
     return BASE_TIMESLOTS.filter(isSlotAvailable);
   };
 
+  // Helper to check if a slot is booked for the selected room/date/duration
+  const isSlotBooked = (slot) => {
+    if (!selectedRoom || !selectedDate || !duration) return false;
+    const selected = new Date(selectedDate);
+    const [h, m] = slot.split(':').map(Number);
+    const slotStart = new Date(selectedDate);
+    slotStart.setHours(h, m, 0, 0);
+    const slotEnd = new Date(slotStart.getTime() + Number(duration) * 60000);
+
+    // Get bookings for this room and date
+    const roomBookings = bookings.filter(
+      (b) =>
+        b.room?._id === selectedRoom &&
+        new Date(b.startTime).toDateString() === selected.toDateString()
+    );
+
+    for (let b of roomBookings) {
+      const bookingStart = new Date(b.startTime);
+      const bookingEnd = new Date(b.endTime);
+      if (slotStart < bookingEnd && slotEnd > bookingStart) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleBook = async () => {
     if (!selectedRoom || !selectedDate || !selectedTime || !duration) {
-      toast.error('Please select all fields.');
+      toast.error('Please select all fields.', { position: 'top-right' });
       return;
     }
 
-    // Prevent booking for past slots (double check)
-    const today = new Date();
+    // Check if selectedTime is still available
+    if (!getAvailableTimeSlots().includes(selectedTime)) {
+      toast.error('Time slot already booked', { position: 'top-right' });
+      fetchBookings();
+      return;
+    }
+
+    // Construct startTime and endTime as ISO strings
     const [h, m] = selectedTime.split(':').map(Number);
     const bookingDate = new Date(selectedDate);
     bookingDate.setHours(h, m, 0, 0);
-
-    if (
-      today.toDateString() === bookingDate.toDateString() &&
-      bookingDate <= today
-    ) {
-      toast.error('Cannot book a slot that has already passed.');
-      return;
-    }
+    const endDate = new Date(bookingDate.getTime() + Number(duration) * 60000);
 
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/bookings`, {
+      await axios.post('http://localhost:5000/api/bookings', {
         room: selectedRoom,
-        date: selectedDate,
-        time: selectedTime,
-        duration // send duration to backend if needed
+        startTime: bookingDate.toISOString(),
+        endTime: endDate.toISOString()
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Room booked successfully!');
+      toast.success('Room booked successfully!', { position: 'top-right' });
       setSelectedTime('');
       fetchBookings();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Booking failed');
+      toast.error(err.response?.data?.message || 'Booking failed', { position: 'top-right' });
+      fetchBookings();
+      return;
     }
   };
 
@@ -218,36 +284,68 @@ const BookRoom = () => {
           </select>
         </div>
 
-        {duration && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label style={{ fontWeight: 'bold' }}>Time Slot:</label>
-            <select
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-            >
-              <option value="">Select</option>
-              {BASE_TIMESLOTS.map((slot, idx) => {
-                const available = getAvailableTimeSlots().includes(slot);
-                return (
-                  <option
-                    key={idx}
-                    value={slot}
-                    disabled={!available}
-                    style={{
-                      color: available ? '#222' : '#d32f2f',
-                      background: available ? '#fff' : '#ffeaea',
-                      fontStyle: !available ? 'italic' : 'normal',
-                      opacity: available ? 1 : 0.6
-                    }}
-                  >
-                    {to12Hour(slot)} {!available ? ' (Unavailable)' : ''}
-                  </option>
-                );
-              })}
-            </select>
+        {duration && selectedTime && (
+          <div style={{ margin: '10px 0', fontWeight: 'bold', color: '#1976d2' }}>
+            From: {to12Hour(selectedTime)} &nbsp; To: {getEndTime(selectedTime, duration)}
           </div>
         )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <label style={{ fontWeight: 'bold' }}>Time Slot:</label>
+          <select
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+            style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+          >
+            <option value="">Select</option>
+            {BASE_TIMESLOTS.map((slot, idx) => {
+              const booked = isSlotBooked(slot);
+              return (
+                <option
+                  key={idx}
+                  value={slot}
+                  disabled={booked}
+                  style={{
+                    color: booked ? '#d32f2f' : '#222',
+                    background: booked ? '#fdeaea' : '#fff',
+                    fontStyle: booked ? 'italic' : 'normal',
+                    opacity: booked ? 0.7 : 1
+                  }}
+                >
+                  {to12Hour(slot)}{booked ? ' (Unavailable)' : ''}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        {/* Show a separate list of booked slots below the dropdown */}
+        <div style={{ marginTop: '16px' }}>
+          <h4 style={{ marginBottom: '8px', color: '#d32f2f' }}>Booked Time Slots:</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {BASE_TIMESLOTS.filter(isSlotBooked).length === 0 ? (
+              <span style={{ color: '#888' }}>No slots booked for this room/date/duration.</span>
+            ) : (
+              BASE_TIMESLOTS.filter(isSlotBooked).map((slot, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    background: '#fdeaea',
+                    color: '#d32f2f',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    border: '1px solid #d32f2f',
+                    marginBottom: '4px'
+                  }}
+                >
+                  {to12Hour(slot)} (Unavailable)
+                </span>
+              ))
+            )}
+          </div>
+        </div>
 
         <button
           onClick={handleBook}
@@ -256,6 +354,12 @@ const BookRoom = () => {
           Book
         </button>
       </div>
+
+      {message && (
+        <div style={{ marginBottom: '20px', padding: '10px', borderRadius: '6px', backgroundColor: '#e1f5fe', color: '#01579b', border: '1px solid #b3e5fc', textAlign: 'center' }}>
+          {message}
+        </div>
+      )}
 
       <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '10px', marginBottom: '20px' }}>
         Current Bookings

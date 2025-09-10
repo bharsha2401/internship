@@ -11,7 +11,8 @@ const createDefaultSuperAdmin = async () => {
         name: 'Super Admin',
         email: 'superadmin@incorgroup.com',
         password: hashedPassword,
-        role: 'SuperAdmin'
+        role: 'SuperAdmin',
+        isVerified: true // <-- Ensure SuperAdmin is always verified
       });
       console.log('✅ Default SuperAdmin created');
     } else {

@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendResetEmail, sendPasswordChangedEmail } from '../utils/email.js';
 import { generateOTP, sendOTPEmail } from '../utils/otpEmail.js';
+import { sendWelcomeEmail } from '../utils/mailer.js';
+import nodemailer from 'nodemailer';
 
 // Store temporary email verification data (in production, use Redis)
 const tempEmailVerifications = new Map();
@@ -86,6 +88,7 @@ export const verifyEmailOTP = async (req, res) => {
 
 // ------------------ STEP 5: CREATE ACCOUNT (NEW) ------------------
 export const createAccount = async (req, res) => {
+  console.log('🔔 [createAccount] called with:', req.body);
   try {
     const { name, email, password, role } = req.body;
     
@@ -116,6 +119,9 @@ export const createAccount = async (req, res) => {
     });
 
     await user.save();
+    console.log('➡️ Sending welcome email to', user.email);
+    await sendWelcomeEmail(user.email, user.name);
+    console.log('✅ Welcome email sent to', user.email);
 
     // Clean up temporary data
     tempEmailVerifications.delete(email);
@@ -226,6 +232,9 @@ export const verifyOTP = async (req, res) => {
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
+    console.log('➡️ Sending welcome email to', user.email);
+    await sendWelcomeEmail(user.email, user.name);
+    console.log('✅ Welcome email sent to', user.email);
 
     res.status(200).json({
       message: 'Email verified successfully. Account created!',
@@ -288,8 +297,8 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // If user is not verified, generate and send new OTP
-    if (!user.isVerified) {
+    // BYPASS: Allow default SuperAdmin to login without verification
+    if (!user.isVerified && user.email !== 'superadmin@incorgroup.com') {
       console.log(`🔄 User ${email} not verified, generating new OTP...`);
       
       // Generate new OTP
@@ -312,7 +321,7 @@ export const login = async (req, res) => {
         return res.status(500).json({ message: 'Failed to send verification email' });
       }
 
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Your account is not verified. We have sent a new verification code to your email.',
         needsVerification: true,
         email: user.email,
@@ -320,7 +329,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token for verified users
+    // Generate JWT token for verified users (or SuperAdmin)
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -451,4 +460,3 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-

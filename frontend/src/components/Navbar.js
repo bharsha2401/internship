@@ -6,6 +6,7 @@ const Navbar = () => {
   const [profilePic, setProfilePic] = useState('/default-profile.png');
   const [showDropdown, setShowDropdown] = useState(false);
   const token = localStorage.getItem('token');
+  const isLoggedIn = !!token && token !== 'undefined' && token !== 'null';
   const role = localStorage.getItem('role');
   const userName = localStorage.getItem('name') || 'User';
 
@@ -17,7 +18,7 @@ const Navbar = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setProfilePic(data.picture ? `${process.env.REACT_APP_API_URL}${data.picture}` : '/default-profile.png');
+      setProfilePic(data.picture ? `${process.env.REACT_APP_API_URL}${data.picture}?t=${Date.now()}` : '/default-profile.png');
     } catch {
       setProfilePic('/default-profile.png');
     }
@@ -136,9 +137,9 @@ const Navbar = () => {
         height: '100%',
         paddingRight: '8px'
       }}>
-        {token && (
-          <>
-            {/* Profile Dropdown */}
+        {/* Only show username, role, and logout if logged in */}
+        {isLoggedIn && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div 
               className="profile-dropdown-container"
               style={{ 
@@ -148,7 +149,6 @@ const Navbar = () => {
                 height: '100%'
               }}
             >
-              {/* Profile Button with Dropdown Arrow */}
               <div 
                 onClick={handleProfileClick}
                 style={{
@@ -172,18 +172,7 @@ const Navbar = () => {
                   }
                 }}
               >
-                <img
-                  src={profilePic}
-                  alt="Profile"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid #007bff',
-                    pointerEvents: 'none'
-                  }}
-                />
+                {/* Removed profile picture */}
                 <div style={{ 
                   display: 'flex', 
                   flexDirection: 'column',
@@ -214,7 +203,6 @@ const Navbar = () => {
                   ▼
                 </span>
               </div>
-
               {/* Dropdown Menu */}
               {showDropdown && (
                 <div style={{
@@ -331,8 +319,7 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-
-            {/* Separate Logout Button */}
+            {/* Logout Button side by side with profile */}
             <button
               onClick={handleLogout}
               style={{
@@ -346,7 +333,8 @@ const Navbar = () => {
                 cursor: 'pointer',
                 boxShadow: '0 2px 8px rgba(231,76,60,0.15)',
                 transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                marginLeft: '0'
               }}
               onMouseOver={(e) => {
                 e.target.style.background = 'linear-gradient(90deg, #c0392b 60%, #a93226 100%)';
@@ -361,7 +349,7 @@ const Navbar = () => {
             >
               Logout
             </button>
-          </>
+          </div>
         )}
       </div>
     </nav>

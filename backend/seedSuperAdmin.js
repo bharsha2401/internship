@@ -23,7 +23,8 @@ async function seedSuperAdmin() {
     name: 'Super Admin',
     email,
     password: hashedPassword,
-    role: 'superadmin'
+    role: 'SuperAdmin',
+    isVerified: true // <-- Ensure verified
   });
 
   await newUser.save();

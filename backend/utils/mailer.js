@@ -1,16 +1,20 @@
 import nodemailer from 'nodemailer';
 
 // Debug email configuration
-console.log('📧 Booking Email Configuration:');
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
 console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***PROVIDED***' : '❌ MISSING');
+console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+console.log('EMAIL_SECURE:', process.env.EMAIL_SECURE);
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 465,
+  secure: process.env.EMAIL_SECURE === 'true' || !process.env.EMAIL_SECURE,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 // Test email configuration on startup
@@ -280,3 +284,31 @@ export const sendBookingCancellation = async (to, roomName, date, time, userName
     throw err;
   }
 };
+
+export async function sendWelcomeEmail(to, name) {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject: `Welcome to INCOR Group Communication Portal, ${name}!`,
+    html: `<h1>Welcome, ${name}!</h1><p>Your account has been created.</p>`
+  };
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Welcome email sent successfully to:', to);
+    console.log('📧 Message ID:', info.messageId);
+    return info;
+  } catch (err) {
+    console.error('❌ Welcome email send error:', err);
+    throw err;
+  }
+}
+
+// New user registration flow
+export async function registerNewUser(user) {
+  // ... existing registration logic ...
+
+  // Send welcome email
+  console.log('➡️ Sending welcome email to', user.email);
+  await sendWelcomeEmail(user.email, user.name);
+  console.log('✅ Welcome email sent to', user.email);
+}

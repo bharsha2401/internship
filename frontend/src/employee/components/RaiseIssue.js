@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const RaiseIssue = () => {
@@ -8,6 +8,25 @@ const RaiseIssue = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [userIssues, setUserIssues] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [selectedIssue, setSelectedIssue] = useState(null);
+
+  const fetchUserIssues = async () => {
+    const userId = localStorage.getItem('userId');
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/issues/user/${userId}`);
+      setUserIssues(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setUserIssues([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserIssues();
+    const interval = setInterval(fetchUserIssues, 10000); // every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -15,13 +34,14 @@ const RaiseIssue = () => {
     setErrorMsg('');
     const raisedBy = localStorage.getItem('userId');
     try {
-    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/raise`, {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/raise`, {
         title, description, priority, raisedBy
       });
       setSuccessMsg('✅ Issue submitted successfully!');
       setTitle('');
       setDescription('');
       setPriority('Medium');
+      await fetchUserIssues(); // <-- Add this line
     } catch (err) {
       setErrorMsg('❌ Failed to submit issue. Please try again.');
     } finally {
@@ -33,10 +53,10 @@ const RaiseIssue = () => {
     <div
       style={{
         minHeight: 'calc(100vh - 72px)',
-        background: 'linear-gradient(120deg, #f8fafc 60%, #e3e9f7 100%)',
+        background: '#f4f8fb',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         padding: '0',
         margin: '0'
       }}
@@ -178,6 +198,123 @@ const RaiseIssue = () => {
         >
           {loading ? 'Submitting...' : 'Submit'}
         </button>
+      </div>
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: '20px',
+          boxShadow: '0 8px 32px rgba(25, 118, 210, 0.13)',
+          padding: '40px 24px 32px 24px',
+          width: '100%',
+          maxWidth: '600px',
+          border: '1px solid #e3e9ee',
+          margin: '40px 32px'
+        }}
+      >
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: 700,
+          color: '#1976d2',
+          marginBottom: '24px',
+          textAlign: 'center',
+          letterSpacing: '1px'
+        }}>
+          👀 Your Raised Issues
+        </h2>
+        <div style={{ textAlign: 'center', marginBottom: '12px', color: '#1976d2', fontWeight: 600 }}>
+          Total Issues Raised: {userIssues.length}
+        </div>
+        {userIssues.length === 0 ? (
+          <p style={{ color: '#888', textAlign: 'center' }}>No issues raised yet.</p>
+        ) : (
+          userIssues.map(issue => (
+            <div key={issue._id} style={{
+              border: '1px solid #e3e9ee',
+              borderRadius: '10px',
+              padding: '18px',
+              marginBottom: '18px',
+              background: '#f8fafc',
+              boxShadow: '0 2px 8px rgba(30,64,175,0.07)'
+            }}>
+              <h3 style={{
+                color: '#1976d2',
+                marginBottom: '8px',
+                fontWeight: 700
+              }}>{issue.title}</h3>
+              <p style={{ color: '#333', marginBottom: '8px' }}>{issue.description}</p>
+              <div style={{ display: 'flex', gap: '18px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                <span>
+                  <strong>Priority:</strong> <span style={{ color: issue.priority === 'High' ? '#d32f2f' : issue.priority === 'Medium' ? '#fbc02d' : '#388e3c' }}>{issue.priority}</span>
+                </span>
+                <span>
+                  <strong>Status:</strong> <span style={{ color: '#1976d2' }}>{issue.status}</span>
+                </span>
+              </div>
+              <p style={{ color: '#666', marginBottom: '8px' }}>
+                <strong>Created:</strong> {new Date(issue.createdAt).toLocaleString()}
+              </p>
+              {/* Comments Section */}
+              <div style={{ marginTop: '10px' }}>
+                <h4 style={{ color: '#1976d2', marginBottom: '6px' }}>💬 Comments:</h4>
+                <ul style={{ paddingLeft: '18px', marginBottom: '10px' }}>
+                  {issue.comments && issue.comments.length > 0 ? (
+                    issue.comments.map((c, idx) => (
+                      <li key={idx} style={{ marginBottom: '6px', color: '#444' }}>
+                        <strong>{c.createdBy?.name || 'Anonymous'}:</strong> {c.text}
+                      </li>
+                    ))
+                  ) : (
+                    <li style={{ color: '#888' }}>No comments yet.</li>
+                  )}
+                </ul>
+                {/* Add comment box for employee */}
+                <input
+                  type="text"
+                  placeholder="Add comment..."
+                  value={selectedIssue === issue._id ? newComment : ''}
+                  onChange={e => {
+                    setSelectedIssue(issue._id);
+                    setNewComment(e.target.value);
+                  }}
+                  style={{
+                    width: '80%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '15px',
+                    background: '#fff',
+                    marginRight: '8px'
+                  }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!newComment || !selectedIssue) return;
+                    const userId = localStorage.getItem('userId');
+                    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
+                      text: newComment,
+                      createdBy: userId,
+                    });
+                    setNewComment('');
+                    setSelectedIssue(null);
+                    fetchUserIssues(); // <-- Refetch issues to get latest comments
+                  }}
+                  style={{
+                    padding: '8px 18px',
+                    background: '#1976d2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '7px',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ➕
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

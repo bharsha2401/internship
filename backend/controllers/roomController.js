@@ -13,10 +13,16 @@ export const getAllRooms = async (req, res) => {
 export const addRoom = async (req, res) => {
   try {
     const { name } = req.body;
-    const room = new Room({ name });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Room name is required' });
+    }
+    const room = new Room({ name: name.trim() });
     await room.save();
     res.status(201).json({ message: 'Room added', room });
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: 'Room name must be unique' });
+    }
     res.status(500).json({ message: 'Room creation failed', error: err.message });
   }
 };

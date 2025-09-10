@@ -7,6 +7,9 @@ import {
   exportIssuesExcel,
   exportIssuesPdf
 } from '../controllers/issueController.js';
+import {
+  getUserIssues
+} from '../controllers/issueController.js';
 
 const router = express.Router();
 
@@ -16,5 +19,6 @@ router.put('/:id/status', updateIssueStatus);
 router.post('/:id/comment', addComment);
 router.get('/export/excel', exportIssuesExcel);
 router.get('/export/pdf', exportIssuesPdf);
+router.get('/user/:userId', getUserIssues);
 
 export default router;

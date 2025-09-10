@@ -1,6 +1,19 @@
 import Issue from '../models/Issue.js';
 import XLSX from 'xlsx';
 import puppeteer from 'puppeteer';
+// Get issues raised by a specific user
+export const getUserIssues = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const issues = await Issue.find({ raisedBy: userId })
+      .populate('raisedBy', 'name')
+      .populate('comments.createdBy', 'name')
+      .sort({ createdAt: -1 });
+    res.status(200).json(issues);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch user issues', error: err.message });
+  }
+};
 
 export const raiseIssue = async (req, res) => {
   try {
