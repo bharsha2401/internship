@@ -287,15 +287,10 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
-    // Check password first
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     // BYPASS: Allow default SuperAdmin to login without verification
     if (!user.isVerified && user.email !== 'superadmin@incorgroup.com') {

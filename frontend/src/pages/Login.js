@@ -44,7 +44,7 @@ const Login = () => {
       // Store user data in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('role', user.role);
-      localStorage.setItem('userId', user.id); // Should be user._id if backend uses _id
+      localStorage.setItem('userId', user._id);
       localStorage.setItem('name', user.name);
       localStorage.setItem('email', user.email);
 
