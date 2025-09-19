@@ -57,3 +57,31 @@ export const updateUserRole = async (req, res) => {
     });
   }
 };
+
+// Get users whose birthday is today
+export const getTodaysBirthdays = async (req, res) => {
+  try {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+
+    const users = await User.find({
+      dob: { $exists: true, $ne: null }
+    });
+
+    const birthdays = users.filter(u => {
+      if (!u.dob) return false;
+      const dob = new Date(u.dob);
+      return dob.getDate() === day && (dob.getMonth() + 1) === month;
+    }).map(u => ({
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      role: u.role
+    }));
+
+    res.json(birthdays);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch birthdays', error: err.message });
+  }
+};

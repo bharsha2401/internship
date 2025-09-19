@@ -44,7 +44,7 @@ import roleRequestRoutes from './routes/roleRequestRoutes.js';
 
 // mount routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/issues', issueRoutes);
 app.use('/api/announcements', announcementRoutes);

@@ -10,7 +10,6 @@ const Announcements = () => {
       .then((res) => setAnnouncements(res.data))
       .catch((err) => console.error(err));
 
-    // Fetch today's birthdays
     axios.get(`${process.env.REACT_APP_API_URL}/api/employees/birthdays`)
       .then((res) => setBirthdays(Array.isArray(res.data) ? res.data : []))
       .catch((err) => setBirthdays([]));
@@ -48,23 +47,9 @@ const Announcements = () => {
 
         {/* Birthday Greetings */}
         {birthdays.length > 0 && (
-          <div style={{
-            marginBottom: '28px',
-            padding: '18px 24px',
-            background: '#fffbe6',
-            borderRadius: '14px',
-            border: '1.5px solid #ffe082',
-            boxShadow: '0 2px 12px rgba(255,193,7,0.08)'
-          }}>
-            <h4 style={{
-              color: '#ff9800',
-              fontWeight: 700,
-              fontSize: '1.18rem',
-              marginBottom: '8px'
-            }}>
-              🎂 Birthday Greetings!
-            </h4>
-            <ul style={{ margin: 0, paddingLeft: '18px', color: '#333', fontSize: '1.08rem' }}>
+          <div>
+            <h4>🎂 Birthday Greetings!</h4>
+            <ul>
               {birthdays.map((emp) => (
                 <li key={emp._id}>
                   Happy Birthday <strong>{emp.name}</strong>! 🎉
