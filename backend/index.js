@@ -65,16 +65,7 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Explicitly handle any preflight
-
-// Friendly middleware to surface CORS errors as JSON
-app.use((err, req, res, next) => {
-  if (err && err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ success: false, message: 'CORS: Origin not allowed', origin: req.headers.origin });
-  }
-  next(err);
-});
+app.use(cors(corsOptions)); // Handles standard + OPTIONS automatically
 
 app.use(express.json());
 
@@ -130,6 +121,16 @@ app.get('/healthz', (req, res) => {
 app.use((req, res) => {
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
+// Centralized error handler (after routes & fallback)
+// Includes CORS denial formatting
+app.use((err, req, res, next) => {
+  if (err && err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ success: false, message: 'CORS: Origin not allowed', origin: req.headers.origin });
+  }
+  console.error('🔥 Unhandled error:', err);
+  res.status(500).json({ success: false, message: 'Internal Server Error' });
 });
 
 // ✅ Listen on all interfaces (0.0.0.0)
