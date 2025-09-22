@@ -165,7 +165,7 @@ const ManageRoleRequests = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                   <div>
-                    <h3 style={{{ color: '#1976d2', margin: '0 0 8px 0' }}}>
+                    <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>
                       {(request.requestedBy?.name || 'Unknown User')} ({request.requestedBy?.email || 'no-email'})
                     </h3>
                     <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
