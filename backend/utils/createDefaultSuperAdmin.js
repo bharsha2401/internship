@@ -2,60 +2,49 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 
-const createDefaultSuperAdmin = async () => {
-  // SuperAdmin
-  const superAdminEmail = 'superadmin@incorgroup.com';
-  let user = await User.findOne({ email: superAdminEmail });
+const ensureAccount = async ({ email, name, role, plainPassword }) => {
+  let user = await User.findOne({ email });
   if (!user) {
-    const hashedPassword = await bcrypt.hash('superadmin123', 10);
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
     user = await User.create({
-      name: 'Super Admin',
-      email: superAdminEmail,
+      name,
+      email,
       password: hashedPassword,
-      role: 'SuperAdmin',
+      role,
       isVerified: true
     });
-    console.log('✅ Default SuperAdmin created');
+    console.log(`✅ Created default ${role}: ${email}`);
   } else {
-    console.log('✅ Default SuperAdmin already exists');
+    // Verify password hash matches expected plain password
+    const ok = await bcrypt.compare(plainPassword, user.password || '');
+    if (!ok) {
+      user.password = await bcrypt.hash(plainPassword, 10);
+      await user.save();
+      console.log(`🛠️ Repaired password for ${email} (reset to default)`);
+    } else {
+      console.log(`✅ ${role} already exists & password OK: ${email}`);
+    }
+    // Ensure verified flag true
+    if (!user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+      console.log(`🔓 Marked ${email} as verified.`);
+    }
   }
-  console.log('SuperAdmin:', { email: superAdminEmail, password: 'superadmin123', userId: user._id });
+  return user;
+};
 
-  // Admin
-  const adminEmail = 'admin@incorgroup.com';
-  let admin = await User.findOne({ email: adminEmail });
-  if (!admin) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    admin = await User.create({
-      name: 'Default Admin',
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'Admin',
-      isVerified: true
-    });
-    console.log('✅ Default Admin created');
-  } else {
-    console.log('✅ Default Admin already exists');
-  }
-  console.log('Admin:', { email: adminEmail, password: 'admin123', userId: admin._id });
+const createDefaultSuperAdmin = async () => {
+  const defaults = [
+    { email: 'superadmin@incorgroup.com', name: 'Super Admin', role: 'SuperAdmin', plainPassword: 'superadmin123' },
+    { email: 'admin@incorgroup.com', name: 'Default Admin', role: 'Admin', plainPassword: 'admin123' },
+    { email: 'employee@incorgroup.com', name: 'Default Employee', role: 'Employee', plainPassword: 'employee123' }
+  ];
 
-  // Employee
-  const employeeEmail = 'employee@incorgroup.com';
-  let employee = await User.findOne({ email: employeeEmail });
-  if (!employee) {
-    const hashedPassword = await bcrypt.hash('employee123', 10);
-    employee = await User.create({
-      name: 'Default Employee',
-      email: employeeEmail,
-      password: hashedPassword,
-      role: 'Employee',
-      isVerified: true
-    });
-    console.log('✅ Default Employee created');
-  } else {
-    console.log('✅ Default Employee already exists');
+  for (const def of defaults) {
+    const user = await ensureAccount(def);
+    console.log(`${def.role}:`, { email: def.email, password: def.plainPassword, userId: user._id });
   }
-  console.log('Employee:', { email: employeeEmail, password: 'employee123', userId: employee._id });
 };
 
 export default createDefaultSuperAdmin;

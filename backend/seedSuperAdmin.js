@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User'); // <-- fix path if needed
 
 // Connect to MongoDB (adjust URI if needed)
-mongoose.connect('mongodb://localhost:27017/employeePortal', {
+mongoose.connect('mongodb+srv://bhvreddy24:yziwSW0WvWJMKVAF@cluster0.t5rhyl6.mongodb.net', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
@@ -18,7 +18,7 @@ async function seedSuperAdmin() {
   const user = await User.findOne({ email });
   if (user) return res.status(400).json({ msg: 'User already exists' });
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('superadmin123', 10);
   const newUser = new User({
     name: 'Super Admin',
     email,
@@ -28,6 +28,6 @@ async function seedSuperAdmin() {
   });
 
   await newUser.save();
-  console.log('✅ Super Admin created with email: superadmin@incorgroup.com and password: admin123');
+  console.log('✅ Super Admin created with email: superadmin@incorgroup.com and password: superadmin123');
   process.exit();
 }
