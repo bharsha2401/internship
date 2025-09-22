@@ -1,25 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
+  const storedUserId = localStorage.getItem('userId');
+
+  const deriveUserId = () => {
+    if (storedUserId && storedUserId !== 'undefined' && storedUserId !== 'null') return storedUserId;
+    if (!token) return null;
+    try {
+      const decoded = jwtDecode(token);
+      return decoded.userId || decoded._id || decoded.id || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const userId = deriveUserId();
 
   useEffect(() => {
+    if (!userId) {
+      console.warn('[MyBookings] No valid userId available, skipping fetch.');
+      setLoading(false);
+      return;
+    }
     fetchBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, token]);
 
   const fetchBookings = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/bookings/user/${userId}`, {
+      const url = `${API_BASE}/api/bookings/user/${userId}`;
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setBookings(response.data);
+      if (Array.isArray(response.data)) {
+        setBookings(response.data);
+      } else {
+        console.warn('[MyBookings] Expected array for bookings, got', response.data);
+        setBookings([]);
+      }
     } catch (error) {
-      console.error("Error fetching bookings", error);
+      if (error?.response?.status !== 400) {
+        console.error('[MyBookings] Error fetching bookings', error);
+      } else {
+        console.warn('[MyBookings] 400 response fetching bookings (likely missing userId).');
+      }
     } finally {
       setLoading(false);
     }
@@ -28,7 +61,7 @@ const MyBookings = () => {
   const handleCancel = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}`, {
+      await axios.delete(`${API_BASE}/api/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessage('Booking cancelled successfully.');
@@ -42,23 +75,23 @@ const MyBookings = () => {
 
   const formatDateTime = (dateStr) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB') + ', ' + d.toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return d.toLocaleDateString('en-GB') + ', ' + d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '50vh',
         fontSize: '18px',
         color: '#1976d2'
       }}>
-        Loading your bookings...
+        {userId ? 'Loading your bookings...' : 'No user session found.'}
       </div>
     );
   }

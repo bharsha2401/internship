@@ -1,10 +1,23 @@
+// Load environment variables FIRST via side‑effect import so dependencies see them
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import connectDB from './config/db.js';
 import createDefaultSuperAdmin from './utils/createDefaultSuperAdmin.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
+
+// Re-establish __dirname / __filename
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+console.log('🔧 Environment variables loaded:');
+console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ LOADED' : '❌ MISSING');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ LOADED' : '❌ MISSING');
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? '✅ PRESENT' : '❌ MISSING');
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '✅ PRESENT' : '❌ MISSING');
+console.log('EMAIL_HOST:', process.env.EMAIL_HOST || '⚠️ default smtp.gmail.com');
+console.log('PORT:', process.env.PORT || 5000);
 
 // connect to MongoDB
 connectDB();
@@ -44,7 +57,8 @@ import roleRequestRoutes from './routes/roleRequestRoutes.js';
 
 // mount routes
 app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes);
+// Users routes (changed mount path from /api to /api/users so frontend GET /api/users works)
+app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/issues', issueRoutes);
 app.use('/api/announcements', announcementRoutes);
@@ -65,9 +79,7 @@ createDefaultSuperAdmin()
   .then(() => console.log('✅ Default SuperAdmin ensured'))
   .catch((err) => console.error('❌ SuperAdmin init failed:', err.message));
 
-// serve static React build
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// serve static React build (reuse existing __dirname from above)
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // fallback route for React SPA

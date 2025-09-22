@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 const SuperadminLandingPage = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -10,11 +11,30 @@ const SuperadminLandingPage = () => {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [pendingRoleRequests, setPendingRoleRequests] = useState(0);
   const navigate = useNavigate();
   
   const token = localStorage.getItem('token');
-  const currentUserId = localStorage.getItem('userId');
+  let currentUserId = localStorage.getItem('userId');
+
+  if (!currentUserId || currentUserId === 'undefined' || currentUserId === 'null') {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        currentUserId = decoded.userId || decoded._id || decoded.id || decoded.sub || null;
+        if (currentUserId) {
+          localStorage.setItem('userId', currentUserId);
+          console.log('[SuperAdminLandingPage] Derived userId from token:', currentUserId);
+        } else {
+          console.warn('[SuperAdminLandingPage] Token decoded but no id field present.');
+        }
+      } catch (e) {
+        console.warn('[SuperAdminLandingPage] Failed to decode token for userId:', e.message);
+      }
+    }
+  }
+
   const userName = localStorage.getItem('name') || 'Super Admin';
 
   useEffect(() => {
@@ -23,82 +43,172 @@ const SuperadminLandingPage = () => {
 
   const fetchAllData = async () => {
     try {
-      // Fetch announcements
-      const announcementsRes = await axios.get('http://localhost:5000/api/announcements/all');
-      setAnnouncements(announcementsRes.data.slice(0, 3));
+      setError(null);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      console.log('🚀 Fetching dashboard data from:', apiUrl);
 
-      // Fetch polls
-      const pollsRes = await axios.get('http://localhost:5000/api/polls/all');
-      setPolls(pollsRes.data.slice(0, 2));
-
-      // Fetch current super admin's bookings only - FIXED
-      const bookingsRes = await axios.get(`http://localhost:5000/api/bookings/user/${currentUserId}`, {
+      const axiosInstance = axios.create({
+        baseURL: apiUrl,
+        timeout: 10000,
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      const requests = [
+        axiosInstance.get('/api/announcements/all'),
+        axiosInstance.get('/api/polls/all'),
+        currentUserId ? axiosInstance.get(`/api/bookings/user/${currentUserId}`) : Promise.resolve({ data: [] }),
+        axiosInstance.get('/api/issues/all'),
+        axiosInstance.get('/api/users/count'),
+        axiosInstance.get('/api/calendar/all'),
+        axiosInstance.get('/api/bookings'),
+        axiosInstance.get('/api/role-requests/pending-count')
+      ];
+
+      if (!currentUserId) {
+        console.warn('[SuperAdminLandingPage] Skipping user bookings fetch: no valid userId.');
+      }
+
+      // Use Promise.allSettled to handle partial failures
+      const results = await Promise.allSettled(requests);
       
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
-      
-      // Filter only today's bookings (already filtered by current user)
-      const todaysBookings = bookingsRes.data.filter(booking => {
-        const bookingDate = new Date(booking.startTime).toISOString().split('T')[0];
-        return bookingDate === todayStr;
-      });
-      
-      setTodayBookings(todaysBookings);
 
-      // Fetch recent issues
-      const issuesRes = await axios.get('http://localhost:5000/api/issues/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRecentIssues(Array.isArray(issuesRes.data) ? issuesRes.data.slice(0, 3) : []);
+      // Process results with error handling
+      const [
+        announcementsRes,
+        pollsRes, 
+        bookingsRes,
+        issuesRes,
+        usersCountRes, // Changed from usersRes to usersCountRes
+        calendarRes,
+        allBookingsRes,
+        roleRequestsRes
+      ] = results;
 
-      // Fetch users count
-      const usersRes = await axios.get('http://localhost:5000/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Set announcements
+      if (announcementsRes.status === 'fulfilled') {
+        setAnnouncements(announcementsRes.value.data.slice(0, 3));
+      } else {
+        console.error('Failed to fetch announcements:', announcementsRes.reason);
+        setAnnouncements([]);
+      }
 
-      // Fetch calendar events
-      const calendarRes = await axios.get('http://localhost:5000/api/calendar/all');
-      const todaysEvents = calendarRes.data.filter(event => {
-        const eventDate = new Date(event.date).toISOString().split('T')[0];
-        return eventDate === todayStr;
-      });
-      setCalendarEvents(todaysEvents);
+      // Set polls
+      if (pollsRes.status === 'fulfilled') {
+        setPolls(pollsRes.value.data.slice(0, 2));
+      } else {
+        console.error('Failed to fetch polls:', pollsRes.reason);
+        setPolls([]);
+      }
 
-      // Get all system bookings for stats
-      const allBookingsRes = await axios.get('http://localhost:5000/api/bookings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Set user bookings
+      if (bookingsRes.status === 'fulfilled') {
+        const todaysBookings = bookingsRes.value.data.filter(booking => {
+          const bookingDate = new Date(booking.startTime).toISOString().split('T')[0];
+          return bookingDate === todayStr;
+        });
+        setTodayBookings(todaysBookings);
+      } else {
+        console.error('Failed to fetch user bookings:', bookingsRes.reason);
+        setTodayBookings([]);
+      }
 
-      const allTodaysBookings = allBookingsRes.data.filter(booking => {
-        const bookingDate = new Date(booking.startTime).toISOString().split('T')[0];
-        return bookingDate === todayStr;
-      });
+      // Set issues
+      if (issuesRes.status === 'fulfilled') {
+        setRecentIssues(Array.isArray(issuesRes.value.data) ? issuesRes.value.data.slice(0, 3) : []);
+      } else {
+        console.error('Failed to fetch issues:', issuesRes.reason);
+        setRecentIssues([]);
+      }
 
-      // Fetch pending role requests count
-      const roleRequestsRes = await axios.get('http://localhost:5000/api/role-requests/pending-count', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPendingRoleRequests(roleRequestsRes.data.count);
+      // Set calendar events
+      if (calendarRes.status === 'fulfilled') {
+        const todaysEvents = calendarRes.value.data.filter(event => {
+          const eventDate = new Date(event.date).toISOString().split('T')[0];
+          return eventDate === todayStr;
+        });
+        setCalendarEvents(todaysEvents);
+      } else {
+        console.error('Failed to fetch calendar events:', calendarRes.reason);
+        setCalendarEvents([]);
+      }
+
+      // Set pending role requests
+      if (roleRequestsRes.status === 'fulfilled') {
+        setPendingRoleRequests(roleRequestsRes.value.data.count || 0);
+      } else {
+        console.error('Failed to fetch role requests:', roleRequestsRes.reason);
+        setPendingRoleRequests(0);
+      }
 
       // Calculate stats
+      let totalUsers = 0;
+      let totalBookings = 0;
+      let todayBookings = 0;
+      let totalIssues = 0;
+      let totalPolls = 0;
+      let totalAnnouncements = 0;
+
+      if (usersCountRes.status === 'fulfilled') {
+        console.log('Users count API response:', usersCountRes.value.data);
+        console.log('Unique users count:', usersCountRes.value.data.count);
+        totalUsers = usersCountRes.value.data.count || 0;
+      } else {
+        console.error('Failed to fetch users count:', usersCountRes.reason);
+      }
+
+      if (allBookingsRes.status === 'fulfilled') {
+        totalBookings = allBookingsRes.value.data.length || 0;
+        const allTodaysBookings = allBookingsRes.value.data.filter(booking => {
+          const bookingDate = new Date(booking.startTime).toISOString().split('T')[0];
+          return bookingDate === todayStr;
+        });
+        todayBookings = allTodaysBookings.length || 0;
+      }
+
+      if (issuesRes.status === 'fulfilled') {
+        totalIssues = Array.isArray(issuesRes.value.data) ? issuesRes.value.data.length : 0;
+      }
+
+      if (pollsRes.status === 'fulfilled') {
+        totalPolls = pollsRes.value.data.length || 0;
+      }
+
+      if (announcementsRes.status === 'fulfilled') {
+        totalAnnouncements = announcementsRes.value.data.length || 0;
+      }
+
       setStats({
-        totalUsers: usersRes.data.length || 0,
-        totalBookings: allBookingsRes.data.length || 0, // All system bookings
-        todayBookings: allTodaysBookings.length || 0, // All today's system bookings
-        totalIssues: Array.isArray(issuesRes.data) ? issuesRes.data.length : 0,
-        totalPolls: pollsRes.data.length || 0,
-        totalAnnouncements: announcementsRes.data.length || 0
+        totalUsers,
+        totalBookings,
+        todayBookings,
+        totalIssues,
+        totalPolls,
+        totalAnnouncements
+      });
+
+      console.log('✅ Dashboard data loaded successfully:', {
+        totalUsers,
+        totalBookings,
+        todayBookings,
+        totalIssues,
+        totalPolls,
+        totalAnnouncements
       });
       
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('❌ Error fetching dashboard data:', error);
+      console.error('API URL being used:', process.env.REACT_APP_API_URL || 'http://localhost:5000');
+      setError('Failed to load dashboard data. Please check if the server is running.');
+      
+      // Set empty states
       setRecentIssues([]);
       setAnnouncements([]);
       setPolls([]);
       setTodayBookings([]);
       setCalendarEvents([]);
+      setPendingRoleRequests(0);
       setStats({
         totalUsers: 0,
         totalBookings: 0,
@@ -120,9 +230,52 @@ const SuperadminLandingPage = () => {
         alignItems: 'center', 
         height: '100vh',
         fontSize: '18px',
-        color: '#1976d2'
+        color: '#1976d2',
+        flexDirection: 'column',
+        gap: '16px'
       }}>
-        Loading super admin dashboard...
+        <div>⏳ Loading super admin dashboard...</div>
+        <div style={{ fontSize: '14px', color: '#666' }}>
+          Connecting to: {process.env.REACT_APP_API_URL || 'http://localhost:5000'}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#d32f2f',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <div>❌ {error}</div>
+        <button
+          onClick={() => {
+            setLoading(true);
+            setError(null);
+            fetchAllData();
+          }}
+          style={{
+            padding: '12px 24px',
+            background: '#1976d2',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          🔄 Retry
+        </button>
+        <div style={{ fontSize: '14px', color: '#666' }}>
+          Make sure the backend server is running on: {process.env.REACT_APP_API_URL || 'http://localhost:5000'}
+        </div>
       </div>
     );
   }
@@ -156,7 +309,7 @@ const SuperadminLandingPage = () => {
           <p style={{
             fontSize: '1.2rem',
             color: '#666',
-            margin: 0
+            margin: '0 0 8px 0'
           }}>
             Welcome back, {userName}! - {new Date().toLocaleDateString('en-US', { 
               weekday: 'long', 
@@ -165,6 +318,16 @@ const SuperadminLandingPage = () => {
               day: 'numeric' 
             })}
           </p>
+          <div style={{
+            fontSize: '0.9rem',
+            color: '#888',
+            background: '#f5f5f5',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            display: 'inline-block'
+          }}>
+            🌐 API Server: {process.env.REACT_APP_API_URL || 'http://localhost:5000'}
+          </div>
         </div>
 
         {/* Stats Overview - CLICKABLE CARDS */}

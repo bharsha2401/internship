@@ -1,6 +1,7 @@
 import Issue from '../models/Issue.js';
 import XLSX from 'xlsx';
 import puppeteer from 'puppeteer';
+import mongoose from 'mongoose';
 // Get issues raised by a specific user
 export const getUserIssues = async (req, res) => {
   try {
@@ -59,12 +60,48 @@ export const addComment = async (req, res) => {
     const { id } = req.params;
     const { text, createdBy } = req.body;
 
+    // Validate input
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    if (!createdBy) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Validate issue ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid issue ID format' });
+    }
+
+    // Validate user ID format
+    if (!mongoose.Types.ObjectId.isValid(createdBy)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
+
+    // Find the issue
     const issue = await Issue.findById(id);
-    issue.comments.push({ text, createdBy });
+    if (!issue) {
+      return res.status(404).json({ message: 'Issue not found' });
+    }
+
+    // Add comment
+    issue.comments.push({ 
+      text: text.trim(), 
+      createdBy: createdBy 
+    });
+    
+    // Save the issue
     await issue.save();
 
-    res.status(200).json(issue);
+    // Populate the updated issue with user data
+    const updatedIssue = await Issue.findById(id)
+      .populate('raisedBy', 'name')
+      .populate('comments.createdBy', 'name');
+
+    res.status(200).json(updatedIssue);
   } catch (err) {
+    console.error('Error adding comment:', err);
     res.status(500).json({ message: 'Failed to add comment', error: err.message });
   }
 };
