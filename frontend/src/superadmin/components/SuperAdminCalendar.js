@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Calendar from 'react-calendar';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 import 'react-calendar/dist/Calendar.css';
 
 const SuperAdminCalendar = () => {
@@ -16,7 +16,7 @@ const SuperAdminCalendar = () => {
 
   const fetchEvents = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/calendar/all');
+  const res = await apiClient.get('/api/calendar/all');
       setEvents(res.data);
     } catch {
       alert('Error loading calendar events');
@@ -28,13 +28,13 @@ const SuperAdminCalendar = () => {
     const createdBy = localStorage.getItem('userId');
     try {
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/calendar/update/${editingId}`, {
+  await apiClient.put(`/api/calendar/update/${editingId}`, {
           title,
           description: desc,
           date: value,
         });
       } else {
-        await axios.post('http://localhost:5000/api/calendar/create', {
+  await apiClient.post('/api/calendar/create', {
           title,
           description: desc,
           date: value,
@@ -60,7 +60,7 @@ const SuperAdminCalendar = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this event?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/calendar/delete/${id}`);
+  await apiClient.delete(`/api/calendar/delete/${id}`);
       fetchEvents();
     } catch {
       alert('Failed to delete event');

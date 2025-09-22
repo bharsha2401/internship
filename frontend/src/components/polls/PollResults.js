@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from '../../apiClient';
 
 const PollResults = () => {
   const [polls, setPolls] = useState([]);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/polls/all")
+    apiClient
+      .get('/api/polls/all')
       .then((res) => setPolls(res.data));
   }, []);
 

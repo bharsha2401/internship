@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -13,7 +13,7 @@ const ViewAllAnnouncements = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/announcements/all');
+  const res = await apiClient.get('/api/announcements/all');
       setAnnouncements(res.data);
     } catch {
       toast.error('Failed to fetch announcements');
@@ -32,11 +32,11 @@ const ViewAllAnnouncements = () => {
     }
     try {
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/announcements/update/${editingId}`, { title, message, type });
+  await apiClient.put(`/api/announcements/update/${editingId}`, { title, message, type });
         toast.success('Announcement updated!');
         setEditingId(null);
       } else {
-        await axios.post('http://localhost:5000/api/announcements/create', { title, message, type, createdBy });
+  await apiClient.post('/api/announcements/create', { title, message, type, createdBy });
         toast.success('Announcement posted!');
       }
       setTitle('');
@@ -58,7 +58,7 @@ const ViewAllAnnouncements = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/announcements/delete/${id}`);
+  await apiClient.delete(`/api/announcements/delete/${id}`);
       toast.error('Announcement deleted!');
       fetchAnnouncements();
     } catch {

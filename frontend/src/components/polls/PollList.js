@@ -1,24 +1,19 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from '../../apiClient';
 import { jwtDecode } from 'jwt-decode';
 
 const PollList = () => {
   const [polls, setPolls] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/polls/all").then(res => setPolls(res.data));
+  apiClient.get('/api/polls/all').then(res => setPolls(res.data));
   }, []);
 
   const handleVote = async (pollId, optionIndex) => {
     try {
-      await axios.post(`http://localhost:5000/api/polls/vote/${pollId}/${optionIndex}`, {}, {
-        headers: {
-          role: localStorage.getItem("role"),
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      });
+      await apiClient.post(`/api/polls/vote/${pollId}/${optionIndex}`);
       alert("Vote recorded!");
-      const res = await axios.get("http://localhost:5000/api/polls/all");
+      const res = await apiClient.get('/api/polls/all');
       setPolls(res.data);
     } catch (err) {
       alert(err.response?.data?.error || "Error voting");

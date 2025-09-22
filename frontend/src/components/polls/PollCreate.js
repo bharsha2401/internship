@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import apiClient from '../../apiClient';
 
 const PollCreate = () => {
   const [question, setQuestion] = useState("");
@@ -17,7 +17,7 @@ const PollCreate = () => {
     e.preventDefault();
     const createdBy = localStorage.getItem("userId");
     try {
-      await axios.post("http://localhost:5000/api/polls/create", {
+  await apiClient.post('/api/polls/create', {
         question,
         options,
         createdBy
