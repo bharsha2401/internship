@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from 'react';
+// Centralized API client handles baseURL + Authorization header
+import apiClient from '../../apiClient';
 
 const RaiseIssue = () => {
   const [title, setTitle] = useState('');
@@ -11,39 +12,62 @@ const RaiseIssue = () => {
   const [userIssues, setUserIssues] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const pollTimer = useRef(null);
 
+  const userId = localStorage.getItem('userId');
+
+  // Helper: safe fetch user issues only if userId exists
   const fetchUserIssues = async () => {
-    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      // Avoid spamming backend with /undefined and stop any existing interval
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current);
+        pollTimer.current = null;
+      }
+      return;
+    }
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/issues/user/${userId}`);
+      const res = await apiClient.get(`/api/issues/user/${userId}`);
       setUserIssues(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setUserIssues([]);
+    } catch (err) {
+      console.warn('Failed to load user issues:', err?.response?.data || err.message);
+      // keep existing list rather than blanking to reduce flicker
     }
   };
 
   useEffect(() => {
     fetchUserIssues();
-    const interval = setInterval(fetchUserIssues, 10000); // every 10 seconds
-    return () => clearInterval(interval);
-  }, []);
+    // Start polling only if userId exists
+    if (userId) {
+      pollTimer.current = setInterval(fetchUserIssues, 10000);
+    }
+    return () => {
+      if (pollTimer.current) clearInterval(pollTimer.current);
+    };
+  // Intentionally exclude fetchUserIssues from deps, userId sufficient
+  }, [userId]);
 
   const handleSubmit = async () => {
     setLoading(true);
     setSuccessMsg('');
     setErrorMsg('');
-    const raisedBy = localStorage.getItem('userId');
+    if (!userId) {
+      setErrorMsg('❌ You must be logged in to raise an issue.');
+      setLoading(false);
+      return;
+    }
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/raise`, {
-        title, description, priority, raisedBy
-      });
+      const payload = { title: title.trim(), description: description.trim(), priority, raisedBy: userId };
+      await apiClient.post('/api/issues/raise', payload);
       setSuccessMsg('✅ Issue submitted successfully!');
       setTitle('');
       setDescription('');
       setPriority('Medium');
-      await fetchUserIssues(); // <-- Add this line
+      // Optimistic refresh
+      fetchUserIssues();
     } catch (err) {
-      setErrorMsg('❌ Failed to submit issue. Please try again.');
+      console.error('Issue raise failed:', err?.response?.data || err.message);
+      setErrorMsg(err?.response?.data?.message || '❌ Failed to submit issue. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -289,11 +313,15 @@ const RaiseIssue = () => {
                 <button
                   onClick={async () => {
                     if (!newComment || !selectedIssue) return;
-                    const userId = localStorage.getItem('userId');
-                    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
-                      text: newComment,
-                      createdBy: userId,
-                    });
+                    if (!userId) return;
+                    try {
+                      await apiClient.post(`/api/issues/${selectedIssue}/comment`, {
+                        text: newComment.trim(),
+                        createdBy: userId,
+                      });
+                    } catch (e) {
+                      console.error('Failed to add comment:', e?.response?.data || e.message);
+                    }
                     setNewComment('');
                     setSelectedIssue(null);
                     fetchUserIssues(); // <-- Refetch issues to get latest comments
