@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import apiClient from '../../apiClient';
+import apiClient from '../../apiClient';
 import { useNavigate } from 'react-router-dom';
 import RoleUpgradeRequest from '../../components/RoleUpgradeRequest';
 
@@ -29,7 +30,7 @@ const AdminLandingPage = () => {
       setAnnouncements(announcementsRes.data.slice(0, 3));
 
       // Fetch polls
-      const pollsRes = await axios.get('http://localhost:5000/api/polls/all');
+  const pollsRes = await apiClient.get('/api/polls/all');
       setPolls(pollsRes.data.slice(0, 2));
 
       // Fetch current admin's bookings only - FIXED

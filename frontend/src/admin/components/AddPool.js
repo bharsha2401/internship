@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -15,7 +15,7 @@ const CreatePollPage = () => {
 
   const fetchPolls = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/polls/all');
+  const res = await apiClient.get('/api/polls/all');
       setPolls(res.data);
     } catch {
       setPolls([]);
@@ -46,37 +46,11 @@ const CreatePollPage = () => {
     const createdBy = localStorage.getItem('userId');
     try {
       if (editingId) {
-        await axios.put(
-          `http://localhost:5000/api/polls/${editingId}`,
-          {
-            question,
-            options: options.filter(opt => opt.trim() !== ''),
-            createdBy
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              role: role
-            }
-          }
-        );
+        await apiClient.put(`/api/polls/${editingId}`,{ question, options: options.filter(opt => opt.trim() !== ''), createdBy });
         toast.success('Poll updated!');
         setEditingId(null);
       } else {
-        await axios.post(
-          'http://localhost:5000/api/polls/create',
-          {
-            question,
-            options: options.filter(opt => opt.trim() !== ''),
-            createdBy
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              role: role
-            }
-          }
-        );
+        await apiClient.post('/api/polls/create',{ question, options: options.filter(opt => opt.trim() !== ''), createdBy });
         toast.success('Poll created!');
       }
       setQuestion('');
@@ -92,12 +66,7 @@ const CreatePollPage = () => {
     const role = localStorage.getItem('role');
     if (!window.confirm('Are you sure you want to delete this poll?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/polls/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          role: role
-        }
-      });
+      await apiClient.delete(`/api/polls/${id}`);
       toast.error('Poll deleted successfully!');
       fetchPolls();
     } catch (err) {
@@ -110,16 +79,7 @@ const CreatePollPage = () => {
     const role = localStorage.getItem('role');
     const userId = localStorage.getItem('userId');
     try {
-      await axios.post(
-        `http://localhost:5000/api/polls/vote/${pollId}/${optionIdx}`,
-        { userId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            role: role
-          }
-        }
-      );
+      await apiClient.post(`/api/polls/vote/${pollId}/${optionIdx}`, { userId });
       toast.success('Vote submitted!');
       fetchPolls();
     } catch (err) {

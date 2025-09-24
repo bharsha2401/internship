@@ -53,7 +53,8 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+  // Added 'role' temporarily for backward compatibility with older frontend requests
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','role'],
   optionsSuccessStatus: 200
 };
 
