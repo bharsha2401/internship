@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { jwtDecode } from 'jwt-decode';
 // Centralized API client handles baseURL + Authorization header
 import apiClient from '../../apiClient';
 
@@ -14,7 +15,27 @@ const RaiseIssue = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const pollTimer = useRef(null);
 
-  const userId = localStorage.getItem('userId');
+  // Resolve userId from localStorage or decode JWT (Netlify sometimes missing localStorage userId)
+  const resolveUserId = () => {
+    const stored = localStorage.getItem('userId');
+    if (stored && stored !== 'undefined' && stored !== 'null') return stored;
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+      const decoded = jwtDecode(token);
+      // Token payload uses 'id'; fallback to alternatives
+      const id = decoded.userId || decoded._id || decoded.id;
+      if (id) {
+        // Persist for future calls
+        localStorage.setItem('userId', id);
+      }
+      return id || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const userId = resolveUserId();
 
   // Helper: safe fetch user issues only if userId exists
   const fetchUserIssues = async () => {

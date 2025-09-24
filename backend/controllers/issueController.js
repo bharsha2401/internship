@@ -1,10 +1,14 @@
 import Issue from '../models/Issue.js';
+import mongoose from 'mongoose';
 import XLSX from 'xlsx';
 import puppeteer from 'puppeteer';
 // Get issues raised by a specific user
 export const getUserIssues = async (req, res) => {
   try {
     const userId = req.params.userId;
+    if (!userId || userId === 'undefined' || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid or missing userId' });
+    }
     const issues = await Issue.find({ raisedBy: userId })
       .populate('raisedBy', 'name')
       .populate('comments.createdBy', 'name')
@@ -18,7 +22,13 @@ export const getUserIssues = async (req, res) => {
 export const raiseIssue = async (req, res) => {
   try {
     const { title, description, priority, raisedBy } = req.body;
-    const issue = new Issue({ title, description, priority, raisedBy });
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+    if (!raisedBy || !mongoose.Types.ObjectId.isValid(raisedBy)) {
+      return res.status(400).json({ message: 'Invalid or missing raisedBy user id' });
+    }
+    const issue = new Issue({ title, description, priority: priority || 'Medium', raisedBy });
     await issue.save();
     res.status(201).json(issue);
   } catch (err) {
@@ -59,7 +69,15 @@ export const addComment = async (req, res) => {
     const { id } = req.params;
     const { text, createdBy } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid issue id' });
+    }
+    if (!text || !createdBy || !mongoose.Types.ObjectId.isValid(createdBy)) {
+      return res.status(400).json({ message: 'Invalid comment data' });
+    }
+
     const issue = await Issue.findById(id);
+    if (!issue) return res.status(404).json({ message: 'Issue not found' });
     issue.comments.push({ text, createdBy });
     await issue.save();
 
