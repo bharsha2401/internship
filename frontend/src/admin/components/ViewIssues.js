@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 
 const ViewIssues = () => {
   const [issues, setIssues] = useState([]);
@@ -10,7 +10,7 @@ const ViewIssues = () => {
 
   const fetchIssues = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/issues/all', {
+      const res = await apiClient.get('/api/issues/all', {
         params: {
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
@@ -28,14 +28,14 @@ const ViewIssues = () => {
   }, [statusFilter, priorityFilter]);
 
   const handleStatusChange = async (id, newStatus) => {
-    await axios.put(`http://localhost:5000/api/issues/${id}/status`, { status: newStatus });
+    await apiClient.put(`/api/issues/${id}/status`, { status: newStatus });
     fetchIssues();
   };
 
   const handleAddComment = async () => {
     if (!newComment || !selectedIssue) return;
     const userId = localStorage.getItem('userId'); // Or get from auth context
-    await axios.post(`http://localhost:5000/api/issues/${selectedIssue}/comment`, {
+    await apiClient.post(`/api/issues/${selectedIssue}/comment`, {
       text: newComment,
       createdBy: userId,
     });
@@ -45,11 +45,12 @@ const ViewIssues = () => {
   };
 
   const exportExcel = () => {
-    window.open('http://localhost:5000/api/issues/export/excel', '_blank');
+    // Use full base URL from apiClient if needed
+    window.open(`${process.env.REACT_APP_API_URL || ''}/api/issues/export/excel`, '_blank');
   };
 
   const exportPdf = () => {
-    window.open('http://localhost:5000/api/issues/export/pdf', '_blank');
+    window.open(`${process.env.REACT_APP_API_URL || ''}/api/issues/export/pdf`, '_blank');
   };
 
   return (

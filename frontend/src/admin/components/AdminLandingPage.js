@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import apiClient from '../../apiClient';
 import { useNavigate } from 'react-router-dom';
 import RoleUpgradeRequest from '../../components/RoleUpgradeRequest';
 
@@ -48,9 +49,7 @@ const AdminLandingPage = () => {
       setTodayBookings(todaysBookings);
 
       // Fetch recent issues
-      const issuesRes = await axios.get('http://localhost:5000/api/issues/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const issuesRes = await apiClient.get('/api/issues/all');
       setRecentIssues(Array.isArray(issuesRes.data) ? issuesRes.data.slice(0, 3) : []);
 
       // Fetch calendar events

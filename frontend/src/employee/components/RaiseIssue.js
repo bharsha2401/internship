@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 
 const RaiseIssue = () => {
   const [title, setTitle] = useState('');
@@ -14,10 +14,14 @@ const RaiseIssue = () => {
 
   const fetchUserIssues = async () => {
     const userId = localStorage.getItem('userId');
+    if (!userId) return;
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/issues/user/${userId}`);
+      const res = await apiClient.get(`/api/issues/user/${userId}`);
       setUserIssues(Array.isArray(res.data) ? res.data : []);
-    } catch {
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setErrorMsg('Session expired. Please log in again.');
+      }
       setUserIssues([]);
     }
   };
@@ -34,16 +38,18 @@ const RaiseIssue = () => {
     setErrorMsg('');
     const raisedBy = localStorage.getItem('userId');
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/raise`, {
-        title, description, priority, raisedBy
-      });
+      await apiClient.post('/api/issues/raise', { title, description, priority, raisedBy });
       setSuccessMsg('✅ Issue submitted successfully!');
       setTitle('');
       setDescription('');
       setPriority('Medium');
-      await fetchUserIssues(); // <-- Add this line
+      await fetchUserIssues();
     } catch (err) {
-      setErrorMsg('❌ Failed to submit issue. Please try again.');
+      if (err.response?.status === 401) {
+        setErrorMsg('You are not authorized. Please log in again.');
+      } else {
+        setErrorMsg('❌ Failed to submit issue. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -290,10 +296,16 @@ const RaiseIssue = () => {
                   onClick={async () => {
                     if (!newComment || !selectedIssue) return;
                     const userId = localStorage.getItem('userId');
-                    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
-                      text: newComment,
-                      createdBy: userId,
-                    });
+                    try {
+                      await apiClient.post(`/api/issues/${selectedIssue}/comment`, {
+                        text: newComment,
+                        createdBy: userId,
+                      });
+                    } catch (err) {
+                      if (err.response?.status === 401) {
+                        setErrorMsg('Session expired. Please log in again.');
+                      }
+                    }
                     setNewComment('');
                     setSelectedIssue(null);
                     fetchUserIssues(); // <-- Refetch issues to get latest comments
