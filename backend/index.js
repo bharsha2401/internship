@@ -12,17 +12,38 @@ connectDB();
 // create Express app
 const app = express();
 
-// ✅ Updated CORS to allow your IP address
-const allowedOrigins = [
+// ✅ CORS configuration (dynamic) so we can give clearer diagnostics and avoid silent failures
+const rawAllowedOrigins = [
   'https://incorgroup.netlify.app',
   'https://incor.netlify.app',
+  'https://www.incor.netlify.app',
+  process.env.FRONTEND_URL, // optional env override
   'http://localhost:3000'
-];
+].filter(Boolean).map(o => o.trim().replace(/\/$/, ''));
+
+const allowedOrigins = Array.from(new Set(rawAllowedOrigins));
 
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true // if you use cookies or auth headers
+  origin: (origin, callback) => {
+    // Allow non-browser tools / same-origin server-side calls (origin undefined)
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/$/, '');
+    if (allowedOrigins.includes(normalized)) {
+      return callback(null, true);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    }
+    return callback(new Error('CORS: Origin not allowed'));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+  exposedHeaders: ['Content-Length']
 }));
+
+// Helpful log once at startup
+console.log('🌐 CORS allowed origins:', allowedOrigins);
 
 app.use(express.json());
 
