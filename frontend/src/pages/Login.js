@@ -43,7 +43,8 @@ const Login = () => {
       // Store user data in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('role', user.role);
-      localStorage.setItem('userId', user._id);
+  // Support both user.id (API returns) and legacy user._id
+  localStorage.setItem('userId', user._id || user.id);
       localStorage.setItem('name', user.name);
       localStorage.setItem('email', user.email);
 

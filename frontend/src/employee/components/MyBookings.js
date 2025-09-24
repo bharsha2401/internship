@@ -8,16 +8,15 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    fetchBookings();
+    if (token) fetchBookings();
     // eslint-disable-next-line
-  }, [userId, token]);
+  }, [token]);
 
   const fetchBookings = async () => {
     try {
-      const response = await apiClient.get(`/api/bookings/user/${userId}`);
+  const response = await apiClient.get('/api/bookings/me');
       setBookings(response.data);
     } catch (error) {
       console.error("Error fetching bookings", error);
