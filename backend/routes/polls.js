@@ -1,12 +1,13 @@
 import express from "express";
 import Poll from "../models/Polls.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import authMiddleware, { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // Admin/SuperAdmin create poll
 router.post(
   "/create",
+  protect,
   authMiddleware(['Admin', 'SuperAdmin']),
   async (req, res) => {
     const { question, options, createdBy } = req.body;
@@ -37,6 +38,7 @@ router.get("/all", async (req, res) => {
 // Update poll (Admin/SuperAdmin)
 router.put(
   "/:id",
+  protect,
   authMiddleware(['Admin', 'SuperAdmin']),
   async (req, res) => {
     const { question, options } = req.body;
@@ -56,6 +58,7 @@ router.put(
 // Delete poll (Admin/SuperAdmin)
 router.delete(
   "/:id",
+  protect,
   authMiddleware(['Admin', 'SuperAdmin']),
   async (req, res) => {
     try {
@@ -67,52 +70,30 @@ router.delete(
   }
 );
 
-// Vote on a poll (allows editing vote)
+// Vote or change vote (single consolidated route)
 router.post(
   "/vote/:pollId/:optionIndex",
+  protect,
   authMiddleware(['Employee', 'Admin', 'SuperAdmin']),
   async (req, res) => {
     const { pollId, optionIndex } = req.params;
+    // Prefer authenticated user id; fallback to provided body userId for legacy clients
     const userId = req.user?._id?.toString() || req.body.userId;
 
     try {
       const poll = await Poll.findById(pollId);
       if (!poll) return res.status(404).json({ error: "Poll not found" });
 
-      // Remove user's previous vote from all options
+      if (!poll.options[optionIndex]) {
+        return res.status(400).json({ error: "Invalid option index" });
+      }
+
+      // Remove user from any previous votes
       poll.options.forEach(opt => {
-        opt.votes = opt.votes.filter(voteId => voteId.toString() !== userId);
+        opt.votes = opt.votes.filter(v => v.toString() !== userId);
       });
 
-      // Add user's vote to the selected option
-      poll.options[optionIndex].votes.push(userId);
-
-      await poll.save();
-      res.json(poll);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-// vote or change vote
-router.post(
-  "/vote/:pollId/:optionIndex",
-  authMiddleware(['Employee', 'Admin', 'SuperAdmin']),
-  async (req, res) => {
-    const { pollId, optionIndex } = req.params;
-    const { userId } = req.body;
-
-    try {
-      const poll = await Poll.findById(pollId);
-      if (!poll) return res.status(404).json({ error: "Poll not found" });
-
-      // first remove the user from all previous votes
-      poll.options.forEach((opt) => {
-        opt.votes = opt.votes.filter((voterId) => voterId.toString() !== userId);
-      });
-
-      // add their new vote
+      // Add new vote
       poll.options[optionIndex].votes.push(userId);
 
       await poll.save();

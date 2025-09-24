@@ -14,9 +14,13 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
     
-    // Use 'id' instead of 'userId' to match how JWT is created in login
+    // Decode token and flexibly support multiple id field names
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password'); // Changed from decoded.userId to decoded.id
+    const decodedId = decoded.id || decoded.userId || decoded._id;
+    if (!decodedId) {
+      return res.status(401).json({ message: 'Not authorized, invalid token payload' });
+    }
+    req.user = await User.findById(decodedId).select('-password');
     
     if (!req.user) {
       return res.status(401).json({ message: 'Not authorized, user not found' });
@@ -39,10 +43,12 @@ export const isSuperAdmin = (req, res, next) => {
 
 // Generic role check middleware
 export default function(requiredRoles) {
+  const normalizedRequired = requiredRoles.map(r => r.toLowerCase());
   return (req, res, next) => {
-    const role = req.user?.role || req.headers.role;
-    if (!requiredRoles.includes(role)) {
-      return res.status(403).json({ error: "Forbidden" });
+    const rawRole = req.user?.role || req.headers.role;
+    const role = (rawRole || '').toLowerCase();
+    if (!role || !normalizedRequired.includes(role)) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
     next();
   };
