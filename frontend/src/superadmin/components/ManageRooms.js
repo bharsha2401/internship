@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 
 const ManageRooms = () => {
   const [rooms, setRooms] = useState([]);
@@ -8,14 +8,12 @@ const ManageRooms = () => {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/rooms', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/rooms');
       setRooms(res.data);
     } catch (err) {
       alert('Failed to fetch rooms');
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
@@ -24,9 +22,7 @@ const ManageRooms = () => {
   const handleAddRoom = async () => {
     if (!roomName.trim()) return alert('Enter a room name');
     try {
-      await axios.post('http://localhost:5000/api/rooms', { name: roomName }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.post('/api/rooms', { name: roomName });
       setRoomName('');
       fetchRooms();
     } catch (err) {
@@ -36,9 +32,7 @@ const ManageRooms = () => {
 
   const handleDeleteRoom = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/rooms/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`/api/rooms/${id}`);
       fetchRooms();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete room');

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import apiClient from '../../apiClient';
+// Centralized API client already attaches Authorization header if token present
 import apiClient from '../../apiClient';
 import { useNavigate } from 'react-router-dom';
 import RoleUpgradeRequest from '../../components/RoleUpgradeRequest';
@@ -26,7 +25,7 @@ const AdminLandingPage = () => {
   const fetchAllData = async () => {
     try {
       // Fetch announcements
-      const announcementsRes = await axios.get('http://localhost:5000/api/announcements/all');
+  const announcementsRes = await apiClient.get('/api/announcements/all');
       setAnnouncements(announcementsRes.data.slice(0, 3));
 
       // Fetch polls
@@ -34,9 +33,7 @@ const AdminLandingPage = () => {
       setPolls(pollsRes.data.slice(0, 2));
 
       // Fetch current admin's bookings only - FIXED
-      const bookingsRes = await axios.get(`http://localhost:5000/api/bookings/user/${currentUserId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const bookingsRes = await apiClient.get(`/api/bookings/user/${currentUserId}`);
       
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
@@ -54,7 +51,7 @@ const AdminLandingPage = () => {
       setRecentIssues(Array.isArray(issuesRes.data) ? issuesRes.data.slice(0, 3) : []);
 
       // Fetch calendar events
-      const calendarRes = await axios.get('http://localhost:5000/api/calendar/all');
+  const calendarRes = await apiClient.get('/api/calendar/all');
       const todaysEvents = calendarRes.data.filter(event => {
         const eventDate = new Date(event.date).toISOString().split('T')[0];
         return eventDate === todayStr;

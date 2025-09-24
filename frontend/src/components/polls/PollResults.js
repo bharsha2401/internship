@@ -5,9 +5,7 @@ const PollResults = () => {
   const [polls, setPolls] = useState([]);
 
   useEffect(() => {
-    apiClient
-      .get('/api/polls/all')
-      .then((res) => setPolls(res.data));
+    apiClient.get('/api/polls/all').then(res => setPolls(res.data)).catch(()=>setPolls([]));
   }, []);
 
   return (

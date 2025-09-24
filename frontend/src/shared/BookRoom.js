@@ -1,7 +1,7 @@
 // client/src/shared/BookRoom.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../apiClient';
 
 const BookRoom = () => {
   const [rooms, setRooms] = useState([]);
@@ -29,26 +29,22 @@ const BookRoom = () => {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/rooms', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/rooms');
       setRooms(res.data);
       if (res.data.length > 0) setSelectedRoom(res.data[0]._id);
     } catch (err) {
       setRooms([]);
     }
-  }, [token]);
+  }, []);
 
   const fetchBookings = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/bookings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/bookings');
       setBookings(res.data);
     } catch (err) {
       setBookings([]);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
@@ -97,12 +93,10 @@ const BookRoom = () => {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/bookings', {
+      await apiClient.post('/api/bookings', {
         room: selectedRoom,
         date: selectedDate,
         time: selectedTime
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       setMessage('Room booked successfully!');
       fetchBookings();
@@ -260,12 +254,7 @@ const BookRoom = () => {
                     )
                       return;
                     try {
-                      await axios.delete(
-                        `http://localhost:5000/api/bookings/${booking._id}`,
-                        {
-                          headers: { Authorization: `Bearer ${token}` },
-                        }
-                      );
+                      await apiClient.delete(`/api/bookings/${booking._id}`);
                       setMessage('Booking cancelled.');
                       fetchBookings();
                     } catch (err) {

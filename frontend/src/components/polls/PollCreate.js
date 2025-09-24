@@ -17,13 +17,7 @@ const PollCreate = () => {
     e.preventDefault();
     const createdBy = localStorage.getItem("userId");
     try {
-  await apiClient.post('/api/polls/create', {
-        question,
-        options,
-        createdBy
-      }, {
-        headers: { role: localStorage.getItem("role") }
-      });
+      await apiClient.post('/api/polls/create', { question, options, createdBy });
       alert("Poll created!");
       setQuestion("");
       setOptions(["", ""]);

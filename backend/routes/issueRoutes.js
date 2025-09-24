@@ -10,16 +10,15 @@ import {
 import {
   getUserIssues
 } from '../controllers/issueController.js';
-import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/raise', protect, raiseIssue);
+router.post('/raise', raiseIssue);
 router.get('/all', getAllIssues);
-router.put('/:id/status', protect, updateIssueStatus);
-router.post('/:id/comment', protect, addComment);
+router.put('/:id/status', updateIssueStatus);
+router.post('/:id/comment', addComment);
 router.get('/export/excel', exportIssuesExcel);
 router.get('/export/pdf', exportIssuesPdf);
-router.get('/user/:userId', protect, getUserIssues);
+router.get('/user/:userId', getUserIssues);
 
 export default router;

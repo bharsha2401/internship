@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 
 const contentContainerStyle = {
@@ -38,192 +38,53 @@ const ViewIssues = () => {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [newComment, setNewComment] = useState('');
   const [selectedIssue, setSelectedIssue] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState({});
-  const [addingComment, setAddingComment] = useState(false);
-  const [notification, setNotification] = useState({ message: '', type: '', show: false });
-  
-  // Use ref to track if request is in progress to prevent duplicate calls
-  const isRequestInProgress = useRef(false);
-
-  // Show notification helper
-  const showNotification = useCallback((message, type = 'info') => {
-    setNotification({ message, type, show: true });
-    setTimeout(() => {
-      setNotification({ message: '', type: '', show: false });
-    }, 4000);
-  }, []); // No dependencies needed
 
   // Memoize fetchIssues to satisfy eslint exhaustive-deps
   const fetchIssues = useCallback(async () => {
-    // Prevent multiple simultaneous requests
-    if (isRequestInProgress.current) {
-      console.log('Request already in progress, skipping...');
-      return;
-    }
-
     try {
-      isRequestInProgress.current = true;
-      setLoading(true);
-      
-      console.log('Fetching issues with filters:', { statusFilter, priorityFilter });
-      
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/issues/all`, {
         params: {
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
         },
       });
-      
-      console.log('Issues fetched successfully:', res.data.length, 'issues');
       setIssues(res.data);
     } catch (err) {
-      console.error('Error fetching issues:', err);
-      showNotification('Failed to load issues. Please try again.', 'error');
-    } finally {
-      setLoading(false);
-      isRequestInProgress.current = false;
+      alert('Failed to load issues');
     }
-  }, [statusFilter, priorityFilter, showNotification]);
+  }, [statusFilter, priorityFilter]);
 
   useEffect(() => {
-    console.log('Filter changed - fetching issues');
     fetchIssues();
   }, [fetchIssues]);
 
   const handleStatusChange = async (id, newStatus) => {
-    if (updatingStatus[id]) return; // Prevent multiple updates for same issue
-    
-    try {
-      setUpdatingStatus(prev => ({ ...prev, [id]: true }));
-      const token = localStorage.getItem('token');
-      
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/issues/${id}/status`, { status: newStatus }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      showNotification('Issue status updated successfully!', 'success');
-      fetchIssues();
-    } catch (err) {
-      console.error('Error updating status:', err);
-      showNotification('Failed to update issue status. Please try again.', 'error');
-    } finally {
-      setUpdatingStatus(prev => ({ ...prev, [id]: false }));
-    }
+  await axios.put(`${process.env.REACT_APP_API_URL}/api/issues/${id}/status`, { status: newStatus });
+  fetchIssues();
   };
 
   const handleAddComment = async () => {
-    if (!newComment?.trim() || !selectedIssue || addingComment) return;
-    
-    try {
-      setAddingComment(true);
-      const userId = localStorage.getItem('userId');
-      const token = localStorage.getItem('token');
-      
-      if (!userId) {
-        showNotification('User not authenticated. Please log in again.', 'error');
-        return;
-      }
-
-      if (!token) {
-        showNotification('Authentication token missing. Please log in again.', 'error');
-        return;
-      }
-      
-      console.log('Adding comment:', {
-        issueId: selectedIssue,
-        text: newComment.trim(),
-        userId: userId
-      });
-
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
-        text: newComment.trim(),
-        createdBy: userId,
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Comment added successfully:', response.data);
-      showNotification('Comment added successfully!', 'success');
-      setNewComment('');
-      setSelectedIssue(null);
-      fetchIssues();
-    } catch (err) {
-      console.error('Error adding comment:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        issueId: selectedIssue,
-        userId: localStorage.getItem('userId')
-      });
-
-      let errorMessage = 'Failed to add comment. Please try again.';
-      
-      if (err.response?.status === 400) {
-        errorMessage = err.response.data.message || 'Invalid input. Please check your comment.';
-      } else if (err.response?.status === 404) {
-        errorMessage = 'Issue not found. Please refresh the page.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Not authorized. Please log in again.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      }
-
-      showNotification(errorMessage, 'error');
-    } finally {
-      setAddingComment(false);
-    }
+    if (!newComment || !selectedIssue) return;
+    const userId = localStorage.getItem('userId');
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/issues/${selectedIssue}/comment`, {
+      text: newComment,
+      createdBy: userId,
+    });
+    setNewComment('');
+    setSelectedIssue(null);
+    fetchIssues();
   };
 
   const exportExcel = () => {
-    try {
-      window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/excel`, '_blank');
-      showNotification('Excel export initiated!', 'success');
-    } catch (err) {
-      console.error('Error exporting Excel:', err);
-      showNotification('Failed to export Excel file. Please try again.', 'error');
-    }
+  window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/excel`, '_blank');
   };
 
   const exportPdf = () => {
-    try {
-      window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/pdf`, '_blank');
-      showNotification('PDF export initiated!', 'success');
-    } catch (err) {
-      console.error('Error exporting PDF:', err);
-      showNotification('Failed to export PDF file. Please try again.', 'error');
-    }
+  window.open(`${process.env.REACT_APP_API_URL}/api/issues/export/pdf`, '_blank');
   };
 
   return (
     <div style={contentContainerStyle}>
-      {/* Notification */}
-      {notification.show && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          padding: '12px 20px',
-          borderRadius: '8px',
-          background: notification.type === 'success' ? '#4caf50' : 
-                     notification.type === 'error' ? '#f44336' : '#2196f3',
-          color: '#fff',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          fontWeight: 600,
-          maxWidth: '400px',
-          wordWrap: 'break-word'
-        }}>
-          {notification.message}
-        </div>
-      )}
-      
       <h2
         style={{
           marginBottom: '25px',
@@ -285,54 +146,22 @@ const ViewIssues = () => {
         }}>📄 Export PDF</button>
       </div>
       <div style={cardStyle}>
-        {loading ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: '200px',
-            fontSize: '18px',
-            color: '#1976d2'
-          }}>
-            ⏳ Loading issues...
-          </div>
-        ) : issues.length === 0 ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: '200px',
-            fontSize: '18px',
-            color: '#666'
-          }}>
-            📋 No issues found
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
-            {issues.map((issue) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
+          {issues.map((issue) => (
             <div
               key={issue._id}
               style={issueCardStyle}
             >
-              <h3 style={{ color: '#1976d2', marginBottom: '8px', fontWeight: 700 }}>{issue?.title || 'Untitled Issue'}</h3>
-              <p style={{ color: '#333', marginBottom: '8px' }}>{issue?.description || 'No description available'}</p>
+              <h3 style={{ color: '#1976d2', marginBottom: '8px', fontWeight: 700 }}>{issue.title}</h3>
+              <p style={{ color: '#333', marginBottom: '8px' }}>{issue.description}</p>
               <div style={{ display: 'flex', gap: '24px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                <span><strong>Priority:</strong> <span style={{ color: issue?.priority === 'High' ? '#d32f2f' : issue?.priority === 'Medium' ? '#fbc02d' : '#388e3c' }}>{issue?.priority || 'Medium'}</span></span>
+                <span><strong>Priority:</strong> <span style={{ color: issue.priority === 'High' ? '#d32f2f' : issue.priority === 'Medium' ? '#fbc02d' : '#388e3c' }}>{issue.priority}</span></span>
                 <span>
                   <strong>Status:</strong>
                   <select
-                    value={issue?.status || 'Pending'}
-                    onChange={(e) => handleStatusChange(issue?._id, e.target.value)}
-                    disabled={updatingStatus[issue?._id] || !issue?._id}
-                    style={{ 
-                      marginLeft: '10px', 
-                      padding: '6px 12px', 
-                      borderRadius: '6px', 
-                      border: '1px solid #bfc9d1', 
-                      fontSize: '15px',
-                      opacity: updatingStatus[issue?._id] ? 0.6 : 1,
-                      cursor: updatingStatus[issue?._id] ? 'not-allowed' : 'pointer'
-                    }}
+                    value={issue.status}
+                    onChange={(e) => handleStatusChange(issue._id, e.target.value)}
+                    style={{ marginLeft: '10px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #bfc9d1', fontSize: '15px' }}
                   >
                     <option>Pending</option>
                     <option>In Progress</option>
@@ -349,64 +178,56 @@ const ViewIssues = () => {
                     {issue.raisedBy?.name || 'Unknown'}
                   </span>
                 </span>
-                <span>🕒 {issue?.createdAt ? new Date(issue.createdAt).toLocaleString() : 'Unknown date'}</span>
+                <span>🕒 {new Date(issue.createdAt).toLocaleString()}</span>
               </div>
 
               <div style={{ marginTop: '14px', background: '#fff', borderRadius: '8px', padding: '14px', boxShadow: '0 1px 4px rgba(30,64,175,0.04)' }}>
                 <h4 style={{ margin: 0, color: '#1a237e', fontWeight: 600 }}>💬 Comments:</h4>
                 <ul style={{ margin: '10px 0 0 0', padding: 0, listStyle: 'none' }}>
-                  {issue?.comments?.length > 0 ? issue.comments.map((c, idx) => (
+                  {issue.comments?.map((c, idx) => (
                     <li key={idx} style={{ marginBottom: '6px', color: '#333' }}>
-                      <strong>{c?.createdBy?.name || 'Anonymous'}:</strong> {c?.text || 'No comment text'} <small style={{ color: '#888' }}>({c?.createdAt ? new Date(c.createdAt).toLocaleString() : 'Unknown date'})</small>
+                      <strong>{c.createdBy?.name || 'Anonymous'}:</strong> {c.text} <small style={{ color: '#888' }}>({new Date(c.createdAt).toLocaleString()})</small>
                     </li>
-                  )) : (
-                    <li style={{ color: '#888', fontStyle: 'italic' }}>No comments yet</li>
-                  )}
+                  ))}
                 </ul>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                   <input
                     type="text"
                     placeholder="Add comment..."
-                    value={selectedIssue === issue?._id ? newComment : ''}
+                    value={selectedIssue === issue._id ? newComment : ''}
                     onChange={(e) => {
-                      if (issue?._id) {
-                        setSelectedIssue(issue._id);
-                        setNewComment(e.target.value);
-                      }
+                      setSelectedIssue(issue._id);
+                      setNewComment(e.target.value);
                     }}
-                    disabled={addingComment}
                     style={{
                       flex: 1,
                       padding: '10px 12px',
                       borderRadius: '6px',
                       border: '1px solid #bfc9d1',
-                      fontSize: '15px',
-                      opacity: addingComment ? 0.6 : 1
+                      fontSize: '15px'
                     }}
                   />
                   <button
                     onClick={handleAddComment}
-                    disabled={addingComment || !newComment?.trim()}
                     style={{
                       padding: '8px 18px',
-                      background: addingComment || !newComment?.trim() ? '#ccc' : 'linear-gradient(90deg, #1976d2 60%, #0d47a1 100%)',
+                      background: 'linear-gradient(90deg, #1976d2 60%, #0d47a1 100%)',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '7px',
                       fontWeight: 600,
                       fontSize: '15px',
-                      cursor: addingComment || !newComment?.trim() ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                       boxShadow: '0 2px 8px rgba(25,118,210,0.07)'
                     }}
                   >
-                    {addingComment ? '⏳' : '➕'}
+                    ➕
                   </button>
                 </div>
               </div>
             </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

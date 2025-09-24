@@ -6,12 +6,12 @@ const PollList = () => {
   const [polls, setPolls] = useState([]);
 
   useEffect(() => {
-  apiClient.get('/api/polls/all').then(res => setPolls(res.data));
+    apiClient.get('/api/polls/all').then(res => setPolls(res.data)).catch(()=>setPolls([]));
   }, []);
 
   const handleVote = async (pollId, optionIndex) => {
     try {
-      await apiClient.post(`/api/polls/vote/${pollId}/${optionIndex}`);
+      await apiClient.post(`/api/polls/vote/${pollId}/${optionIndex}`, {});
       alert("Vote recorded!");
       const res = await apiClient.get('/api/polls/all');
       setPolls(res.data);

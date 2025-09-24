@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   role: {
     type: String,
     enum: ["Employee", "Admin", "SuperAdmin", "employee", "admin", "superadmin"],
@@ -22,9 +22,6 @@ const userSchema = new mongoose.Schema({
   dob: { type: Date, default: null },
   picture: { type: String, default: "" }
 });
-
-// Helpful index to ensure case-insensitive uniqueness in some MongoDB deployments
-userSchema.index({ email: 1 }, { unique: true });
 
 export default mongoose.model("User", userSchema);
 

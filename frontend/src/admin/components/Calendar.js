@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 import 'react-calendar/dist/Calendar.css';
 
 const AdminCalendar = () => {
@@ -10,12 +10,12 @@ const AdminCalendar = () => {
   const [desc, setDesc] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/calendar/all').then(res => setEvents(res.data));
+    apiClient.get('/api/calendar/all').then(res => setEvents(res.data)).catch(()=>setEvents([]));
   }, []);
 
   const handleCreateEvent = async () => {
     const createdBy = localStorage.getItem('userId');
-    await axios.post('http://localhost:5000/api/calendar/create', {
+    await apiClient.post('/api/calendar/create', {
       title,
       description: desc,
       date: selectedDate,
@@ -23,7 +23,7 @@ const AdminCalendar = () => {
     });
     setTitle('');
     setDesc('');
-    const res = await axios.get('http://localhost:5000/api/calendar/all');
+    const res = await apiClient.get('/api/calendar/all');
     setEvents(res.data);
   };
 

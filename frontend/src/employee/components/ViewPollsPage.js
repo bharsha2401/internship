@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 import { jwtDecode } from 'jwt-decode';
 
 const ViewPollsPage = () => {
@@ -14,7 +14,7 @@ const ViewPollsPage = () => {
   const fetchPolls = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/polls/all');
+  const res = await apiClient.get('/api/polls/all');
       setPolls(res.data);
     } catch {
       setPolls([]);
@@ -37,16 +37,7 @@ const ViewPollsPage = () => {
     const userId = getUserIdFromToken();
     setVoteMessage('');
     try {
-      await axios.post(
-        `http://localhost:5000/api/polls/vote/${pollId}/${optionIndex}`,
-        { userId },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            role: localStorage.getItem('role')
-          }
-        }
-      );
+      await apiClient.post(`/api/polls/vote/${pollId}/${optionIndex}`, { userId });
       setVoteMessage('Vote submitted!');
       fetchPolls();
     } catch (err) {

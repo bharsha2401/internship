@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../apiClient';
 import { toast } from 'react-toastify';
 import SuperAdminSidebar from '../superadmin/components/Sidebar';
 import AdminSidebar from '../admin/components/Sidebar';
@@ -33,10 +33,7 @@ const SettingsPage = () => {
 
   const fetchSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/auth/settings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/auth/settings');
       setSettings({ ...settings, ...res.data });
     } catch (err) {
       console.log('Using default settings');
@@ -45,10 +42,7 @@ const SettingsPage = () => {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5000/api/auth/settings', settings, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.put('/api/auth/settings', settings);
       toast.success('Settings saved successfully!');
     } catch (err) {
       toast.error('Failed to save settings');

@@ -28,13 +28,13 @@ const SuperAdminCalendar = () => {
     const createdBy = localStorage.getItem('userId');
     try {
       if (editingId) {
-  await apiClient.put(`/api/calendar/update/${editingId}`, {
+        await apiClient.put(`/api/calendar/update/${editingId}`, {
           title,
           description: desc,
           date: value,
         });
       } else {
-  await apiClient.post('/api/calendar/create', {
+        await apiClient.post('/api/calendar/create', {
           title,
           description: desc,
           date: value,

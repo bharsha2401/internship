@@ -24,7 +24,7 @@ const isSlotBooked = (slot) => {
   return false;
 };
 import React, { useState, useEffect, useCallback } from 'react';;
-import axios from 'axios';
+import apiClient from '../apiClient';
 import { toast } from 'react-toastify';
 
 const DURATION_OPTIONS = [
@@ -74,26 +74,22 @@ const BookRoom = () => {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/rooms`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/rooms');
       setRooms(res.data);
       if (res.data.length > 0) setSelectedRoom(res.data[0]._id);
     } catch (err) {
       setRooms([]);
     }
-  }, [token]);
+  }, []);
 
   const fetchBookings = useCallback(async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/bookings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/bookings');
       setBookings(res.data);
     } catch (err) {
       setBookings([]);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
@@ -193,12 +189,10 @@ const BookRoom = () => {
     const endDate = new Date(bookingDate.getTime() + Number(duration) * 60000);
 
     try {
-      await axios.post('http://localhost:5000/api/bookings', {
+      await apiClient.post('/api/bookings', {
         room: selectedRoom,
         startTime: bookingDate.toISOString(),
         endTime: endDate.toISOString()
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Room booked successfully!', { position: 'top-right' });
       setSelectedTime('');
@@ -385,9 +379,7 @@ const BookRoom = () => {
                   onClick={async () => {
                     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
                     try {
-                      await axios.delete(`${process.env.REACT_APP_API_URL}/api/bookings/${booking._id}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                      });
+                      await apiClient.delete(`/api/bookings/${booking._id}`);
                       toast.success('Booking cancelled.');
                       fetchBookings();
                     } catch (err) {

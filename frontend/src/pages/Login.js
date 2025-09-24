@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import apiClient, { API_BASE_URL } from '../apiClient';
+import apiClient from '../apiClient';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -33,11 +33,10 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Single logged base URL for debugging
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[Login] Using API base:', API_BASE_URL);
-      }
-      const res = await apiClient.post('/api/auth/login', { email, password });
+  const res = await apiClient.post('/api/auth/login', {
+        email,
+        password
+      });
 
       const { token, user } = res.data;
 

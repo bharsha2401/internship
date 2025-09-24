@@ -45,7 +45,6 @@ const ViewIssues = () => {
   };
 
   const exportExcel = () => {
-    // Use full base URL from apiClient if needed
     window.open(`${process.env.REACT_APP_API_URL || ''}/api/issues/export/excel`, '_blank');
   };
 

@@ -41,49 +41,55 @@ const CreatePollPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
     const createdBy = localStorage.getItem('userId');
+    const cleanedOptions = options.map(o => o.trim()).filter(o => o !== '');
+    if (!question.trim()) {
+      toast.error('Question is required');
+      return;
+    }
+    if (cleanedOptions.length < 2) {
+      toast.error('At least two options are required');
+      return;
+    }
     try {
       if (editingId) {
-        await apiClient.put(`/api/polls/${editingId}`,{ question, options: options.filter(opt => opt.trim() !== ''), createdBy });
+        await apiClient.put(`/api/polls/${editingId}`,{ question: question.trim(), options: cleanedOptions, createdBy });
         toast.success('Poll updated!');
         setEditingId(null);
       } else {
-        await apiClient.post('/api/polls/create',{ question, options: options.filter(opt => opt.trim() !== ''), createdBy });
+        await apiClient.post('/api/polls/create',{ question: question.trim(), options: cleanedOptions, createdBy });
         toast.success('Poll created!');
       }
       setQuestion('');
       setOptions(['', '']);
       fetchPolls();
     } catch (err) {
-      toast.error('Failed to submit poll');
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err.message || 'Failed to submit poll';
+      toast.error(msg);
     }
   };
 
   const handleDelete = async (id) => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
     if (!window.confirm('Are you sure you want to delete this poll?')) return;
     try {
       await apiClient.delete(`/api/polls/${id}`);
       toast.error('Poll deleted successfully!');
       fetchPolls();
     } catch (err) {
-      toast.error('Failed to delete poll');
+      const msg = err?.response?.data?.error || err.message || 'Failed to delete poll';
+      toast.error(msg);
     }
   };
 
   const handleVote = async (pollId, optionIdx) => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
     const userId = localStorage.getItem('userId');
     try {
       await apiClient.post(`/api/polls/vote/${pollId}/${optionIdx}`, { userId });
       toast.success('Vote submitted!');
       fetchPolls();
     } catch (err) {
-      toast.error('Failed to submit vote');
+      const msg = err?.response?.data?.error || err.message || 'Failed to submit vote';
+      toast.error(msg);
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../apiClient';
 
 const RoleUpgradeRequest = () => {
   const [requestedRole, setRequestedRole] = useState('');
@@ -29,9 +29,7 @@ const RoleUpgradeRequest = () => {
 
   const fetchMyRequests = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/role-requests/my-requests', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/role-requests/my-requests');
       setMyRequests(res.data || []);
     } catch (error) {
       console.error('Error fetching requests:', error);
@@ -51,11 +49,9 @@ const RoleUpgradeRequest = () => {
     setMessage('');
 
     try {
-      await axios.post('http://localhost:5000/api/role-requests/create', {
+      await apiClient.post('/api/role-requests/create', {
         requestedRole,
         reason: reason.trim()
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       setMessage('Role upgrade request submitted successfully!');

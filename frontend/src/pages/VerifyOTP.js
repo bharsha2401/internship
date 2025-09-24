@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../apiClient';
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState('');
@@ -42,10 +42,7 @@ const VerifyOTP = () => {
 
     try {
       // Use the old verify-otp endpoint for unverified users
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', {
-        email,
-        otp
-      });
+      await apiClient.post('/api/auth/verify-otp', { email, otp });
 
       // Show success message
       setVerificationSuccess(true);
@@ -75,7 +72,7 @@ const VerifyOTP = () => {
 
     try {
       // Use the old resend-otp endpoint for unverified users
-      await axios.post('http://localhost:5000/api/auth/resend-otp', { email });
+  await apiClient.post('/api/auth/resend-otp', { email });
       setMessage('New OTP sent successfully! Please check your email.');
       setCountdown(60); // 60 second countdown
     } catch (err) {

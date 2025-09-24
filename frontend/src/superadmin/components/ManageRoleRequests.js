@@ -166,10 +166,10 @@ const ManageRoleRequests = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                   <div>
                     <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>
-                      {(request.requestedBy?.name || 'Unknown User')} ({request.requestedBy?.email || 'no-email'})
+                      {request.requestedBy.name} ({request.requestedBy.email})
                     </h3>
                     <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
-                      {(request.currentRole || 'N/A')} → {(request.requestedRole || 'N/A')}
+                      {request.currentRole} → {request.requestedRole}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -183,10 +183,10 @@ const ManageRoleRequests = () => {
                       background: request.status === 'Pending' ? '#ffc107' :
                                 request.status === 'Approved' ? '#28a745' : '#dc3545'
                     }}>
-                      {request.status || 'Unknown'}
+                      {request.status}
                     </div>
                     <div style={{ color: '#666', fontSize: '14px', marginTop: '4px' }}>
-                      {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '—'}
+                      {new Date(request.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ const ManageRoleRequests = () => {
                 <div style={{ marginBottom: '16px' }}>
                   <strong style={{ color: '#333' }}>Reason:</strong>
                   <p style={{ color: '#666', margin: '8px 0', lineHeight: 1.5 }}>
-                    {request.reason || '—'}
+                    {request.reason}
                   </p>
                 </div>
 
@@ -263,7 +263,7 @@ const ManageRoleRequests = () => {
                       {request.reviewNote}
                     </p>
                     <small style={{ color: '#888' }}>
-                      Reviewed by: {request.reviewedBy?.name || '—'} on {request.reviewedAt ? new Date(request.reviewedAt).toLocaleDateString() : '—'}
+                      Reviewed by: {request.reviewedBy?.name} on {new Date(request.reviewedAt).toLocaleDateString()}
                     </small>
                   </div>
                 )}

@@ -12,9 +12,7 @@ const RoomManager = () => {
 
   const fetchRooms = async () => {
     try {
-      const res = await apiClient.get('/api/rooms', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/rooms');
       setRooms(res.data);
     } catch (err) {
       console.error('Error fetching rooms:', err);
@@ -24,9 +22,7 @@ const RoomManager = () => {
   const handleAddRoom = async () => {
     if (!roomName.trim()) return alert('Enter a room name');
     try {
-      await apiClient.post('/api/rooms', { name: roomName }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.post('/api/rooms', { name: roomName });
       setRoomName('');
       fetchRooms();
     } catch (err) {
@@ -36,9 +32,7 @@ const RoomManager = () => {
 
   const handleDeleteRoom = async (id) => {
     try {
-      await apiClient.delete(`/api/rooms/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`/api/rooms/${id}`);
       fetchRooms();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete room');

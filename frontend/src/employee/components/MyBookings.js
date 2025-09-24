@@ -1,55 +1,26 @@
 // client/src/employee/components/MyBookings.js
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import apiClient from '../../apiClient';
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const token = localStorage.getItem('token');
-  const storedUserId = localStorage.getItem('userId');
-
-  const deriveUserId = () => {
-    if (storedUserId && storedUserId !== 'undefined' && storedUserId !== 'null') return storedUserId;
-    if (!token) return null;
-    try {
-      const decoded = jwtDecode(token);
-      return decoded.userId || decoded._id || decoded.id || null;
-    } catch {
-      return null;
-    }
-  };
-  const userId = deriveUserId();
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    if (!userId) {
-      console.warn('[Employee MyBookings] No valid userId, skipping fetch.');
-      setLoading(false);
-      return;
-    }
     fetchBookings();
     // eslint-disable-next-line
   }, [userId, token]);
 
   const fetchBookings = async () => {
-    setLoading(true);
     try {
-      const url = `${API_BASE}/api/bookings/user/${userId}`;
-      const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (Array.isArray(response.data)) {
-        setBookings(response.data);
-      } else {
-        console.warn('[Employee MyBookings] Expected array for bookings, got', response.data);
-        setBookings([]);
-      }
+      const response = await apiClient.get(`/api/bookings/user/${userId}`);
+      setBookings(response.data);
     } catch (error) {
-      if (error?.response?.status !== 400) {
-        console.error('[Employee MyBookings] Error fetching bookings', error);
-      }
+      console.error("Error fetching bookings", error);
     } finally {
       setLoading(false);
     }
@@ -65,7 +36,7 @@ const MyBookings = () => {
     }
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      await axios.delete(`${API_BASE}/api/bookings/${bookingId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.delete(`/api/bookings/${bookingId}`);
       setMessage('Booking cancelled.');
       fetchBookings();
     } catch (err) {

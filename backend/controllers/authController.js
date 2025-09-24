@@ -90,9 +90,8 @@ export const verifyEmailOTP = async (req, res) => {
 export const createAccount = async (req, res) => {
   console.log('🔔 [createAccount] called with:', req.body);
   try {
-    let { name, email, password, role } = req.body;
-    email = (email || '').trim().toLowerCase();
-
+    const { name, email, password, role } = req.body;
+    
     // Check if email was pre-verified
     const tempData = tempEmailVerifications.get(email);
     if (!tempData || !tempData.verified) {
@@ -142,9 +141,8 @@ export const createAccount = async (req, res) => {
 // ------------------ SIGNUP (EXISTING - Keep for backward compatibility) ------------------
 export const signup = async (req, res) => {
   try {
-    let { name, email, password, role } = req.body;
-    email = (email || '').trim().toLowerCase();
-
+    const { name, email, password, role } = req.body;
+    
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser && existingUser.isVerified) {
@@ -286,38 +284,38 @@ export const resendOTP = async (req, res) => {
 // ------------------ LOGIN ------------------
 export const login = async (req, res) => {
   try {
-    let { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-    const originalEmail = email;
-    email = email.trim().toLowerCase();
-
-    console.log(`[LOGIN] Attempt for email: raw='${originalEmail}' normalized='${email}'`);
-
+    const { email, password } = req.body;
+    
     const user = await User.findOne({ email });
-    if (!user) {
-      console.warn(`[LOGIN] No user found for email=${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const isMatch = await bcrypt.compare(password, user.password || '');
-    if (!isMatch) {
-      console.warn(`[LOGIN] Password mismatch for userId=${user._id} email=${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     // BYPASS: Allow default SuperAdmin to login without verification
     if (!user.isVerified && user.email !== 'superadmin@incorgroup.com') {
-      console.log(`[LOGIN] Unverified user login attempt: ${email} - issuing new OTP`);
+      console.log(`🔄 User ${email} not verified, generating new OTP...`);
+      
+      // Generate new OTP
       const otp = generateOTP();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      // Update user with new OTP
       user.otp = otp;
-      user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.otpExpires = otpExpires;
       await user.save();
-      try { await sendOTPEmail(email, otp, user.name); } catch (emailError) {
-        console.error('[LOGIN] Failed to send verification email:', emailError.message);
+
+      console.log(`📧 Sending OTP ${otp} to ${email}...`);
+      
+      // Send OTP email
+      try {
+        await sendOTPEmail(email, otp, user.name);
+        console.log(`✅ OTP email sent successfully to ${email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send OTP email:', emailError);
         return res.status(500).json({ message: 'Failed to send verification email' });
       }
+
       return res.status(400).json({
         message: 'Your account is not verified. We have sent a new verification code to your email.',
         needsVerification: true,
@@ -326,22 +324,27 @@ export const login = async (req, res) => {
       });
     }
 
+    // Generate JWT token for verified users (or SuperAdmin)
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    console.log(`[LOGIN] Success for userId=${user._id} role=${user.role}`);
-
-    return res.status(200).json({
+    res.status(200).json({
       message: 'Login successful',
       token,
-      user: { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified
+      }
     });
   } catch (error) {
     console.error('❌ Login error:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

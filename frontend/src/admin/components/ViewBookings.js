@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../apiClient';
 
 const ViewBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -14,9 +14,7 @@ const ViewBookings = () => {
 
   const fetchBookings = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/bookings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get('/api/bookings');
       setBookings(res.data);
     } catch (err) {
       setBookings([]);
@@ -37,9 +35,7 @@ const ViewBookings = () => {
   const handleCancel = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`/api/bookings/${bookingId}`);
       fetchBookings();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to cancel booking');
