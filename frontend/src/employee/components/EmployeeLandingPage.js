@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+// Use centralized apiClient which already sets baseURL & Authorization header
+import apiClient from '../../apiClient';
 import { useNavigate } from 'react-router-dom';
 import RoleUpgradeRequest from '../../components/RoleUpgradeRequest';
 
@@ -22,18 +23,25 @@ const EmployeeLandingPage = () => {
 
   const fetchAllData = async () => {
     try {
-      // Fetch announcements
-      const announcementsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/announcements/view`);
+      // 1. Announcements
+      const announcementsRes = await apiClient.get('/api/announcements/view');
       setAnnouncements(announcementsRes.data.slice(0, 3)); // Latest 3
 
-      // Fetch polls
-      const pollsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/polls/all`);
+      // 2. Polls
+      const pollsRes = await apiClient.get('/api/polls/all');
       setPolls(pollsRes.data.slice(0, 3)); // Latest 3
 
-      // Fetch my bookings
-      const bookingsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/bookings/user/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // 3. Bookings (guard against missing userId to avoid /undefined 500)
+      let bookingsRes = { data: [] };
+      if (userId) {
+        try {
+          bookingsRes = await apiClient.get(`/api/bookings/user/${userId}`);
+        } catch (bookErr) {
+          console.error('Failed to load bookings for user', userId, bookErr);
+        }
+      } else {
+        console.warn('No userId in localStorage; skipping bookings fetch');
+      }
       
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
@@ -51,8 +59,8 @@ const EmployeeLandingPage = () => {
       setTodayBookings(todaysBookings);
       setUpcomingBookings(upcoming);
 
-      // Fetch calendar events
-      const calendarRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/calendar/all`);
+      // 4. Calendar events
+      const calendarRes = await apiClient.get('/api/calendar/all');
       const todaysEvents = calendarRes.data.filter(event => {
         const eventDate = new Date(event.date).toISOString().split('T')[0];
         return eventDate === todayStr;
@@ -67,13 +75,13 @@ const EmployeeLandingPage = () => {
   };
 
   const handleVote = async (pollId, optionIdx) => {
+    if (!userId) {
+      console.warn('Cannot vote without userId');
+      return;
+    }
     try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/polls/vote/${pollId}/${optionIdx}`,
-        { userId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchAllData(); // Refresh data
+      await apiClient.post(`/api/polls/vote/${pollId}/${optionIdx}`, { userId });
+      fetchAllData(); // Refresh data after voting
     } catch (err) {
       console.error('Vote failed:', err);
     }
